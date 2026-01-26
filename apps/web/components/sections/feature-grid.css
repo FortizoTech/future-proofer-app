@@ -1,0 +1,210 @@
+/* ============================================
+   FEATURE GRID STYLES
+   Dedicated CSS for the Feature Grid Section
+   Implements the custom polygon shape with border
+   ============================================ */
+
+/* --- SECTION CONTAINER --- */
+.feature-section {
+    position: relative;
+    width: 100%;
+    background-color: transparent;
+    padding: 0 1rem;
+    font-family: inherit;
+    display: flex;
+    justify-content: center;
+    /* Padding handled by global section styles */
+}
+
+.feature-container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* --- HEADER --- */
+.feature-header {
+    text-align: center;
+    max-width: 42rem;
+    /* max-w-2xl */
+    margin-bottom: 4rem;
+    padding: 0 1rem;
+}
+
+.feature-title {
+    font-size: 1.875rem;
+    /* text-3xl */
+    line-height: 1.2;
+    font-weight: 900;
+    color: #001D3D;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+}
+
+@media (min-width: 768px) {
+    .feature-title {
+        font-size: 3rem;
+        /* text-5xl */
+    }
+}
+
+.feature-subtitle {
+    color: #6B7280;
+    /* text-gray-500 */
+    font-size: 1rem;
+    /* text-base */
+    font-weight: 500;
+}
+
+@media (min-width: 768px) {
+    .feature-subtitle {
+        font-size: 1.125rem;
+        /* text-lg */
+    }
+}
+
+/* --- GRID LAYOUT --- */
+.feature-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    column-gap: 2.5rem;
+    row-gap: 3rem;
+    width: 100%;
+    max-width: 64rem;
+    /* max-w-5xl */
+    place-items: center;
+}
+
+@media (min-width: 768px) {
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* --- CARD --- */
+.feature-card {
+    width: 100%;
+    max-width: 28rem;
+    /* max-w-md */
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(4px);
+    border-radius: 2rem;
+    /* rounded-[32px] */
+    padding: 1.5rem;
+    padding-bottom: 2.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #F3F4F6;
+    /* border-gray-100 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* --- THE SHAPE (GEM / HEXAGON) --- */
+.feature-shape-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/10;
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    /* Shadow applied to the clip-path shape! */
+}
+
+/* 
+   THE MATHEMATICAL SHAPE:
+   A 6-point polygon (Irregular Hexagon / Gem)
+   P1: 50% 0%   (Top Center)
+   P2: 100% 35% (Right Top-Mid)
+   P3: 100% 85% (Right Bottom-Mid)
+   P4: 50% 100% (Bottom Center)
+   P5: 0% 85%   (Left Bottom-Mid)
+   P6: 0% 35%   (Left Top-Mid)
+*/
+.feature-shape-border {
+    position: absolute;
+    inset: 0;
+    background-color: #003DA5;
+    /* The Blue Border */
+    clip-path: polygon(50% 0%, 100% 35%, 100% 85%, 50% 100%, 0% 85%, 0% 35%);
+    z-index: 1;
+}
+
+.feature-shape-image {
+    position: absolute;
+    inset: 4px;
+    /* 4px Border Thickness */
+    background-color: #E2E8F0;
+    clip-path: polygon(50% 0%, 100% 35%, 100% 85%, 50% 100%, 0% 85%, 0% 35%);
+    z-index: 2;
+    overflow: hidden;
+}
+
+.feature-shape-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+}
+
+.feature-card:hover .feature-shape-image img {
+    transform: scale(1.1);
+}
+
+/* --- CARD CONTENT --- */
+.feature-card-title {
+    font-size: 1.25rem;
+    /* text-xl */
+    font-weight: 800;
+    color: #001D3D;
+    margin-bottom: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .feature-card-title {
+        font-size: 1.5rem;
+        /* text-2xl */
+    }
+}
+
+.feature-card-desc {
+    color: #6B7280;
+    /* text-gray-500 */
+    font-size: 1rem;
+    line-height: 1.625;
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* --- LIST ITEMS --- */
+.feature-card-list {
+    width: 100%;
+    padding: 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.feature-card-list-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #4B5563;
+    /* text-gray-600 */
+    font-weight: 500;
+}
+
+.feature-card-list-item svg {
+    margin-right: 0.5rem;
+    color: #003DA5;
+}

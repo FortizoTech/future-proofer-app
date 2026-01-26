@@ -1,9 +1,42 @@
 "use client";
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import logoImage from "@/assets/future-proofer-logo.png";
+import "./navbar.css";
+
+const RealTimeClock = () => {
+    const [time, setTime] = useState<string>("");
+
+    useEffect(() => {
+        const updateTime = () => {
+            const now = new Date();
+            // Format: Monday, January 26, 2026 at 11:53:15 AM GMT
+            const options: Intl.DateTimeFormatOptions = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                timeZoneName: 'short'
+            };
+            setTime(now.toLocaleDateString('en-US', options));
+        };
+
+        updateTime();
+        const timer = setInterval(updateTime, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="navbar-clock">
+            {time}
+        </div>
+    );
+};
 
 export default function Navbar() {
     return (
@@ -11,16 +44,19 @@ export default function Navbar() {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-4xl px-4"
+            className="navbar-root"
         >
-            {/* Glass Morphism Container */}
-            <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-[24px] shadow-lg shadow-slate-900/5 px-6 py-3 flex items-center justify-between">
+            {/* Real Time Clock Display */}
+            <RealTimeClock />
+
+            {/* Glass Morphism Panel */}
+            <div className="navbar-glass-panel">
 
                 {/* Logo Section */}
-                <Link href="/" className="flex items-center gap-3 group">
-                    <div className="relative w-32 h-10">
+                <Link href="/" className="navbar-logo-container group">
+                    <div className="navbar-logo-wrapper">
                         <Image
-                            src={logoImage}
+                            src="/logo-transparent.png"
                             alt="Future Proofer Logo"
                             fill
                             className="object-contain"
@@ -29,20 +65,29 @@ export default function Navbar() {
                     </div>
                 </Link>
 
-                {/* Navigation Links & CTA */}
-                <div className="flex items-center gap-6">
-                    {/* Features Link */}
+                {/* Navigation Links */}
+                <div className="navbar-links">
                     <Link
                         href="#features"
-                        className="text-[#003DA5] font-semibold text-sm hover:text-[#002875] transition-colors hidden sm:block"
+                        className="navbar-link-item group"
                     >
                         Features
+                        <span className="navbar-link-underline" />
                     </Link>
+                    <Link
+                        href="#pricing"
+                        className="navbar-link-item group"
+                    >
+                        Pricing
+                        <span className="navbar-link-underline" />
+                    </Link>
+                </div>
 
-                    {/* Launch App Button */}
+                {/* Primary CTA */}
+                <div className="navbar-cta-container">
                     <Link href="/onboarding">
-                        <button className="bg-[#003DA5] hover:bg-[#002875] text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-0.5 active:translate-y-0">
-                            LAUNCH APP
+                        <button className="navbar-launch-btn">
+                            Launch App
                         </button>
                     </Link>
                 </div>

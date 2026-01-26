@@ -50,7 +50,7 @@
 
   /* Set base font size larger for readability */
   html {
-    font-size: 18px;
+    font-size: 80%;
   }
 
   /* Touch targets must be big on mobile */
@@ -92,6 +92,41 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* ============================================
+   GLOBAL SECTION SPACING
+   Apply consistent vertical padding to all sections
+   ============================================ */
+section {
+  padding-top: 3rem !important;
+  padding-bottom: 3rem !important;
+}
+
+@media (min-width: 768px) {
+  section {
+    padding-top: 4rem !important;
+    padding-bottom: 4rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  section {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+  }
+}
+
+/* ============================================
+   SECTION HEADER SPACING
+   Consistent gap between headers and subheaders
+   ============================================ */
+section h2 {
+  margin-bottom: 0.75rem;
+}
+
+section h2+p {
+  margin-top: 0.5rem;
 }
 
 .imgDark {

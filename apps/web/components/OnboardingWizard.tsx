@@ -37,24 +37,24 @@ const slideVariants = {
     }),
 };
 
-// --- BACKGROUND COMPONENT (World Map Simulation) ---
+// --- BACKGROUND COMPONENT (World Map Background) ---
 const WorldMapBackground = () => (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 bg-slate-50">
-        {/* Abstract Dot/Map Grid */}
-        <div
-            className="absolute inset-0 opacity-[0.4]"
-            style={{
-                backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)',
-                backgroundSize: '40px 40px'
-            }}
-        />
-        {/* Soft Radial Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-50/50 via-white/40 to-white/80" />
+    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 bg-white">
+        {/* The Map Image */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-10">
+            <img
+                src="/onboarding-map.png"
+                alt="Onboarding Map Background"
+                className="w-full h-full object-contain"
+            />
+        </div>
 
-        {/* Stylized Blurred Continent blobs to simulate the map in screenshot */}
-        <div className="absolute top-[20%] left-[10%] w-64 h-64 bg-blue-200/20 rounded-full blur-3xl" />
-        <div className="absolute top-[40%] right-[20%] w-80 h-80 bg-blue-300/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-[10%] left-[30%] w-56 h-56 bg-indigo-200/20 rounded-full blur-3xl" />
+        {/* Soft Radial Gradient Overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-blue-50/30 via-transparent to-white/50" />
+
+        {/* Subtle decorative blobs */}
+        <div className="absolute top-[10%] left-[5%] w-96 h-96 bg-blue-100/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[10%] right-[5%] w-96 h-96 bg-indigo-100/20 rounded-full blur-[100px]" />
     </div>
 );
 
@@ -93,7 +93,7 @@ export default function OnboardingWizard() {
             <WorldMapBackground />
 
             {/* The Glass Card Container */}
-            <div className="w-full max-w-[500px] min-h-[580px] bg-white/70 backdrop-blur-xl border border-white/50 rounded-[40px] shadow-2xl shadow-blue-900/10 flex flex-col p-8 relative overflow-hidden transition-all duration-500">
+            <div className="w-full relative rounded-[36px] border-2 border-blue-500 p-[6px] max-w-[500px] min-h-[580px] bg-white/70 backdrop-blur-xl  rounded-[40px] shadow-2xl shadow-blue-900/10 flex flex-col p-8 relative overflow-hidden transition-all duration-500">
 
                 {/* -- Cancel Button (Top Right) -- */}
                 {!isSimulating && (
