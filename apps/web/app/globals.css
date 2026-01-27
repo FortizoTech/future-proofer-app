@@ -50,11 +50,13 @@
 
   /* Set base font size larger for readability */
   html {
-    font-size: 80%;
+    font-size: 80% !important;
   }
 
-  /* Touch targets must be big on mobile */
-  button {
+  /* Touch targets must be big on mobile - ONLY for landing/onboarding pages */
+  .hero-section button,
+  .cta-section button,
+  .onboarding-page button {
     min-height: 55px;
     border-radius: 12px;
   }
@@ -397,4 +399,21 @@ footer.footer-root {
   font-weight: 700 !important;
   cursor: pointer !important;
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.2) !important;
+}
+
+/* ============================================
+   DASHBOARD SPECIFIC STYLES
+   Reset global overrides for dashboard pages
+   ============================================ */
+
+/* Dashboard buttons should not inherit landing page styles */
+.dashboard-page button,
+main button {
+  min-height: auto;
+}
+
+/* Dashboard sections don't need the global section padding */
+main section {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }

@@ -19,14 +19,15 @@
  * @file apps/web/app/onboarding/page.tsx
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Briefcase, Rocket, ChevronRight, Upload, ChevronLeft,
-    X, Check, Lightbulb, Target, Search, RefreshCw,
+    X as CloseIcon, Check, Lightbulb, Target, Search, RefreshCw,
     Building2, Users, DollarSign, User, Mail, FileText,
     Loader2, AlertCircle
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import "../../assets/css/onboarding.css";
 import "../../assets/css/ai-loader.css";
 import AiLoader from "@/components/AiLoader";
@@ -85,12 +86,16 @@ const WorldMapBackground = () => (
 // ============================================
 
 const LogoIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-    </svg>
+    <img
+        src="/logo/logo-transparent.png"
+        alt="Future Proofer Logo"
+        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
 );
+
+
+
+
 
 // ============================================
 // CONSTANTS
@@ -128,12 +133,26 @@ const REVENUE_STAGES: { value: RevenueStage; label: string }[] = [
 // MAIN COMPONENT
 // ============================================
 
-export default function OnboardingWizard() {
+function OnboardingContent() {
     const [step, setStep] = useState(1);
     const [direction, setDirection] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const searchParams = useSearchParams();
+
+    // Handle mode selection from landing page
+    useEffect(() => {
+        const modeParam = searchParams.get('mode');
+        if (modeParam) {
+            const upperMode = modeParam.toUpperCase() as UserMode;
+            if (upperMode === 'CAREER' || upperMode === 'BUSINESS') {
+                setData(prev => ({ ...prev, mode: upperMode }));
+                setStep(2);
+            }
+        }
+    }, [searchParams]);
 
     // File input ref for CV upload
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,6 +165,7 @@ export default function OnboardingWizard() {
         skills: [],
         fullName: '',
         email: '',
+        password: '',
         cvFile: null,
     });
 
@@ -271,7 +291,7 @@ export default function OnboardingWizard() {
                 {/* Cancel Button */}
                 {!isSubmitting && !successMessage && (
                     <a href="/" className="onboarding-cancel" title="Cancel">
-                        <X />
+                        <CloseIcon />
                     </a>
                 )}
 
@@ -285,7 +305,6 @@ export default function OnboardingWizard() {
                         <div className="onboarding-logo">
                             <LogoIcon />
                         </div>
-                        <h4 className="onboarding-brand">Future Proofer</h4>
                         <span className="onboarding-step-badge">Step {step} of {TOTAL_STEPS}</span>
                     </motion.div>
                 )}
@@ -501,7 +520,7 @@ export default function OnboardingWizard() {
                                                                 onClick={() => setData({ ...data, cvFile: null })}
                                                                 className="onboarding-upload-remove"
                                                             >
-                                                                <X />
+                                                                <CloseIcon />
                                                             </button>
                                                         </div>
                                                     ) : (
@@ -630,7 +649,7 @@ export default function OnboardingWizard() {
                                         </div>
 
                                         {/* Email Input */}
-                                        <div style={{ marginBottom: '1.5rem' }}>
+                                        <div style={{ marginBottom: '1rem' }}>
                                             <label className="onboarding-label">Email Address</label>
                                             <div className="onboarding-input-wrapper">
                                                 <Mail className="onboarding-input-icon" />
@@ -640,6 +659,26 @@ export default function OnboardingWizard() {
                                                     className="onboarding-input onboarding-input--with-icon"
                                                     value={data.email}
                                                     onChange={(e) => setData({ ...data, email: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Password Input */}
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <label className="onboarding-label">Password</label>
+                                            <div className="onboarding-input-wrapper">
+                                                <div className="onboarding-input-icon">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
+                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    type="password"
+                                                    placeholder="Min. 6 characters"
+                                                    className="onboarding-input onboarding-input--with-icon"
+                                                    value={data.password}
+                                                    onChange={(e) => setData({ ...data, password: e.target.value })}
                                                 />
                                             </div>
                                         </div>
@@ -747,7 +786,7 @@ const SkillInput = ({ skills, addSkill, removeSkill }: SkillInputProps) => {
                     {skills.map((s) => (
                         <span key={s} className="onboarding-skill-tag">
                             {s}
-                            <X onClick={(e) => { e.stopPropagation(); removeSkill(s); }} />
+                            <CloseIcon onClick={(e: React.MouseEvent) => { e.stopPropagation(); removeSkill(s); }} />
                         </span>
                     ))}
                 </div>
@@ -764,3 +803,18 @@ const SkillInput = ({ skills, addSkill, removeSkill }: SkillInputProps) => {
         </div>
     );
 };
+
+export default function OnboardingWizard() {
+    return (
+        <Suspense fallback={
+            <div className="onboarding-page">
+                <WorldMapBackground />
+                <div className="onboarding-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Loader2 className="onboarding-spinner" size={48} />
+                </div>
+            </div>
+        }>
+            <OnboardingContent />
+        </Suspense>
+    );
+}

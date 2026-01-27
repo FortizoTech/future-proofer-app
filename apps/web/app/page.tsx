@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import Preloader from '../components/Preloader';
+
 import Navbar from '../components/Navbar';
 import Hero from '../components/sections/Hero';
 import FeatureGrid from '../components/sections/FeatureGrid';
@@ -13,7 +13,7 @@ import MapBackground from '../components/ui/MapBackground';
 
 export default function LandingPage() {
   return (
-    <Preloader>
+    <>
       <MapBackground />
       <Navbar />
       <Hero />
@@ -24,6 +24,6 @@ export default function LandingPage() {
       </div>
       <CTA />
       <Footer />
-    </Preloader>
+    </>
   );
 }

@@ -1,0 +1,141 @@
+<!--
+============================================
+FUTURE PROOFER - EMAIL CONFIRMATION TEMPLATE
+============================================
+Copy this HTML into your Supabase Dashboard:
+Authentication > Email Templates > Confirm signup
+
+Make sure to replace YOUR_DOMAIN with your actual domain
+(e.g., https://futureproofer.com)
+============================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Your Email - Future Proofer</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8;">
+  
+  <!-- Wrapper Table -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f0f4f8;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Main Container -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 520px; background-color: #ffffff; border-radius: 24px; box-shadow: 0 25px 60px -15px rgba(59, 130, 246, 0.15); border: 2px solid #3B82F6; overflow: hidden;">
+          
+          <!-- Header with Logo -->
+          <tr>
+            <td align="center" style="padding: 40px 40px 24px 40px; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);">
+              <!-- Logo Container -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center">
+                    <!-- Replace YOUR_DOMAIN with your actual domain -->
+                    <img 
+                      src="{{ .SiteURL }}/logo/logo-white.png" 
+                      alt="Future Proofer" 
+                      width="180" 
+                      style="display: block; max-width: 180px; height: auto;"
+                    />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content Section -->
+          <tr>
+            <td style="padding: 40px;">
+              
+              <!-- Greeting -->
+              <h1 style="margin: 0 0 16px 0; font-size: 28px; font-weight: 800; color: #0f172a; text-align: center; line-height: 1.2;">
+                Confirm Your Email
+              </h1>
+              
+              <!-- Subtitle -->
+              <p style="margin: 0 0 32px 0; font-size: 16px; color: #64748b; text-align: center; line-height: 1.6;">
+                You're almost there! Click the button below to verify your email address and unlock your personalized roadmap.
+              </p>
+              
+              <!-- CTA Button -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 0 0 32px 0;">
+                    <a 
+                      href="{{ .ConfirmationURL }}" 
+                      target="_blank"
+                      style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 14px; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);"
+                    >
+                      Confirm My Email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Divider -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="border-top: 1px solid #e2e8f0;"></td>
+                </tr>
+              </table>
+              
+              <!-- Fallback Link -->
+              <p style="margin: 0 0 16px 0; font-size: 13px; color: #94a3b8; text-align: center; line-height: 1.5;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 12px; color: #3B82F6; text-align: center; word-break: break-all; line-height: 1.4;">
+                {{ .ConfirmationURL }}
+              </p>
+              
+              <!-- Security Note -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f8fafc; border-radius: 12px; padding: 16px;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <p style="margin: 0; font-size: 12px; color: #64748b; text-align: center; line-height: 1.5;">
+                      🔒 This link expires in 24 hours. If you didn't create an account with Future Proofer, you can safely ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b; text-align: center; font-weight: 600;">
+                Future Proofer
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.4;">
+                Forging the future of African innovation<br/>
+                © 2026 Future Proofer. All rights reserved.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+        <!-- End Main Container -->
+        
+        <!-- Unsubscribe / Help -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 520px;">
+          <tr>
+            <td style="padding: 24px 20px;">
+              <p style="margin: 0; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5;">
+                Need help? Contact us at <a href="mailto:support@futureproofer.com" style="color: #3B82F6; text-decoration: none;">support@futureproofer.com</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+  <!-- End Wrapper Table -->
+  
+</body>
+</html>

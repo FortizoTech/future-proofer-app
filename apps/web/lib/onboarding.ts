@@ -46,6 +46,7 @@ export interface OnboardingData {
     // Step 4: Identity
     fullName: string;
     email: string;
+    password: string;
 }
 
 export interface UploadResult {
@@ -58,6 +59,7 @@ export interface SignUpResult {
     success: boolean;
     userId?: string;
     error?: string;
+    session?: any;
 }
 
 export interface ProfileSaveResult {
@@ -146,12 +148,12 @@ export async function uploadCV(file: File, userId: string): Promise<UploadResult
 
 /**
  * Extracts text from a CV file
- * 
+ *
  * TODO: Implement actual PDF/DOCX parsing using:
  * - pdf-parse for PDF files
  * - mammoth for DOCX files
  * - Or use an AI service like OpenAI GPT-4 Vision for PDF parsing
- * 
+ *
  * @param file - The CV file
  * @returns Extracted text or null
  */
@@ -173,28 +175,46 @@ export async function extractCVText(file: File): Promise<string | null> {
 // ============================================
 
 /**
- * Creates a new user account with Supabase Auth
- * 
+ * Generates a secure random password
+ */
+function generateSecurePassword(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 16; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
+/**
+ * Creates a new user account with Supabase Auth using email/password
+ * No email verification required - user is logged in immediately
+ *
  * @param email - User's email address
  * @param fullName - User's full name
+ * @param password - Optional password (auto-generated if not provided)
  * @returns SignUpResult with userId or error
  */
 export async function signUpUser(
     email: string,
-    fullName: string
+    fullName: string,
+    password?: string
 ): Promise<SignUpResult> {
     const supabase = createClient();
 
     try {
-        // Use magic link (passwordless) auth for simplicity
-        // The user will receive an email to confirm
-        const { data, error } = await supabase.auth.signInWithOtp({
+        // Use email/password signup - no email verification needed
+        const userPassword = password || generateSecurePassword();
+
+        const { data, error } = await supabase.auth.signUp({
             email,
+            password: userPassword,
             options: {
                 data: {
                     full_name: fullName
                 },
-                emailRedirectTo: `${window.location.origin}/dashboard`
+                // Don't require email confirmation
+                emailRedirectTo: undefined
             }
         });
 
@@ -206,10 +226,11 @@ export async function signUpUser(
             };
         }
 
-        // For OTP, user ID won't be available until they confirm
-        // Return success to indicate the magic link was sent
+        // User is created and logged in immediately
         return {
-            success: true
+            success: true,
+            userId: data.user?.id,
+            session: data.session
         };
     } catch (err) {
         console.error('Sign Up Exception:', err);
@@ -219,6 +240,8 @@ export async function signUpUser(
         };
     }
 }
+
+
 
 // ============================================
 // PROFILE SAVE FUNCTION
@@ -310,10 +333,10 @@ export async function saveProfile(
 
 /**
  * Orchestrates the complete onboarding submission:
- * 1. Sign up the user
- * 2. Upload CV if provided (Career mode only)
- * 3. Save all profile data
- * 
+ * 1. Sign up the user with email/password (no email verification)
+ * 2. Save profile data immediately
+ * 3. Upload CV if provided (Career mode only)
+ *
  * @param data - The complete onboarding data
  * @returns Object with success status, message, and redirect URL
  */
@@ -323,8 +346,8 @@ export async function completeOnboarding(data: OnboardingData): Promise<{
     redirectUrl?: string;
 }> {
     try {
-        // Step 1: Sign up the user with magic link
-        const signUpResult = await signUpUser(data.email, data.fullName);
+        // Step 1: Sign up the user with email/password (no email verification)
+        const signUpResult = await signUpUser(data.email, data.fullName, data.password);
 
         if (!signUpResult.success) {
             return {
@@ -333,21 +356,41 @@ export async function completeOnboarding(data: OnboardingData): Promise<{
             };
         }
 
-        // For magic link auth, the user needs to click the email link
-        // The profile will be created/updated when they confirm
-        // Store onboarding data in localStorage for retrieval after confirmation
-
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('pendingOnboardingData', JSON.stringify({
-                ...data,
-                cvFile: null // Don't store file object
-            }));
+        // Step 2: Check if session was established
+        if (!signUpResult.session) {
+            console.warn('User created but no session established. Email confirmation likely required.');
+            return {
+                success: true,
+                message: 'Account created! Please check your email to confirm your account.',
+                redirectUrl: '/login?message=check_email'
+            };
         }
 
+        // Step 3: Save profile data immediately (user is now logged in)
+        if (signUpResult.userId) {
+            const profileResult = await saveProfile(signUpResult.userId, data);
+
+            if (!profileResult.success) {
+                console.error('Profile save failed:', profileResult.error);
+                // Still redirect to dashboard, it will handle the error via finalizePendingOnboarding
+            }
+
+            // Step 4: Upload CV if provided (Career mode)
+            if (data.mode === 'CAREER' && data.cvFile) {
+                const uploadResult = await uploadCV(data.cvFile, signUpResult.userId);
+                if (uploadResult.success && uploadResult.url) {
+                    // Update profile with CV URL
+                    const supabase = createClient();
+                    await supabase.from('profiles').update({ cv_url: uploadResult.url }).eq('id', signUpResult.userId);
+                }
+            }
+        }
+
+        // User is signed up and logged in - redirect to dashboard
         return {
             success: true,
-            message: 'Check your email for a magic link to complete sign up!',
-            redirectUrl: '/login?message=check-email'
+            message: 'Account created successfully! Redirecting to your dashboard...',
+            redirectUrl: '/dashboard'
         };
     } catch (err) {
         console.error('Complete Onboarding Error:', err);
@@ -359,18 +402,41 @@ export async function completeOnboarding(data: OnboardingData): Promise<{
 }
 
 /**
+ * Result type for finalizePendingOnboarding
+ */
+export interface FinalizeOnboardingResult {
+    success: boolean;
+    error?: string;
+    hasPendingData: boolean;
+}
+
+/**
  * Called after user confirms email to save pending onboarding data
  * Should be called from a page that runs after auth confirmation
+ * Returns detailed result with error information for proper error handling
  */
-export async function finalizePendingOnboarding(): Promise<boolean> {
+export async function finalizePendingOnboarding(): Promise<FinalizeOnboardingResult> {
     const supabase = createClient();
 
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError) {
+        console.error('Auth error in finalizePendingOnboarding:', authError);
+        return {
+            success: false,
+            error: `Authentication error: ${authError.message}`,
+            hasPendingData: false
+        };
+    }
 
     if (!user) {
         console.log('No authenticated user found');
-        return false;
+        return {
+            success: false,
+            error: 'No authenticated user found. Please log in again.',
+            hasPendingData: false
+        };
     }
 
     // Get pending data from localStorage
@@ -380,7 +446,10 @@ export async function finalizePendingOnboarding(): Promise<boolean> {
 
     if (!pendingDataStr) {
         console.log('No pending onboarding data found');
-        return false;
+        return {
+            success: true, // Not an error, just no pending data
+            hasPendingData: false
+        };
     }
 
     try {
@@ -392,12 +461,27 @@ export async function finalizePendingOnboarding(): Promise<boolean> {
         if (result.success) {
             // Clear pending data
             localStorage.removeItem('pendingOnboardingData');
-            return true;
+            console.log('Onboarding data successfully saved to database for user:', user.id);
+            return {
+                success: true,
+                hasPendingData: true
+            };
         }
 
-        return false;
+        // Profile save failed
+        console.error('Failed to save profile:', result.error);
+        return {
+            success: false,
+            error: result.error || 'Failed to save your profile to the database. Please try again.',
+            hasPendingData: true
+        };
     } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         console.error('Finalize Onboarding Error:', err);
-        return false;
+        return {
+            success: false,
+            error: `Error processing onboarding data: ${errorMessage}`,
+            hasPendingData: true
+        };
     }
 }
