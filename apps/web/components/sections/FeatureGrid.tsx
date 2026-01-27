@@ -2,7 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import "./feature-grid.css";
+import "../../assets/css/feature-grid.css";
 import careergideImage from "@/assets/career-guide-ai.png";
 import BusinessMateImage from "@/assets/business-mate-ai.png";
 import ThinkforgeImage from "@/assets/thinkforge-learning.png";

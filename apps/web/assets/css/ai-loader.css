@@ -1,0 +1,262 @@
+/* ============================================
+   AI LOADER - FUTURISTIC DESIGN STYLES
+   ============================================
+   Features:
+   - Squircle container (iOS-style superellipse)
+   - Tech-styled circular progress
+   - Decorative circuit elements
+   - Animated progress bars
+   ============================================ */
+
+/* --- Main Container --- */
+.ai-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+}
+
+/* --- Squircle Container (Superellipse Shape) --- */
+.ai-loader-squircle {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    min-height: 520px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    /* Squircle border radius - smooth superellipse effect */
+    border-radius: 32px;
+
+    /* Blue border matching reference */
+    border: 2px solid rgba(59, 130, 246, 0.4);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+        0 20px 60px -15px rgba(59, 130, 246, 0.15),
+        0 0 40px -10px rgba(59, 130, 246, 0.1);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 2rem 2rem;
+    overflow: hidden;
+}
+
+/* --- Tech Circle Container --- */
+.ai-loader-tech-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+/* --- Outer Decorative Ring --- */
+.ai-loader-outer-ring {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    will-change: transform;
+}
+
+/* --- Middle Decorative Ring --- */
+.ai-loader-middle-ring {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    will-change: transform;
+}
+
+/* --- Main Progress Circle --- */
+.ai-loader-main-circle {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+}
+
+/* --- Percentage Display --- */
+.ai-loader-percentage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.ai-loader-percent-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: -0.02em;
+}
+
+/* --- Animated Glow Effect --- */
+.ai-loader-glow {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+            rgba(59, 130, 246, 0.1) 0%,
+            rgba(59, 130, 246, 0.05) 40%,
+            transparent 70%);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+/* --- Title --- */
+.ai-loader-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+/* --- Subtitle --- */
+.ai-loader-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* --- Task Progress Bars --- */
+.ai-loader-tasks {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 0 0.5rem;
+}
+
+.ai-loader-task {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ai-loader-task-label {
+    font-size: 0.75rem;
+    color: #475569;
+    font-weight: 500;
+    min-width: 180px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ai-loader-task-bar {
+    flex-grow: 1;
+    height: 12px;
+    background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 100%);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.ai-loader-task-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3B82F6 0%, #1D4ED8 100%);
+    border-radius: 6px;
+    position: relative;
+}
+
+.ai-loader-task-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+}
+
+/* --- Step Dots --- */
+.ai-loader-dots {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+.ai-loader-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    transition: all 0.3s ease;
+}
+
+.ai-loader-dot.active {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+    .ai-loader-squircle {
+        min-height: 480px;
+        padding: 2rem 1.5rem;
+    }
+
+    .ai-loader-tech-container {
+        width: 180px;
+        height: 180px;
+    }
+
+    .ai-loader-outer-ring {
+        width: 180px;
+        height: 180px;
+    }
+
+    .ai-loader-middle-ring {
+        width: 160px;
+        height: 160px;
+    }
+
+    .ai-loader-main-circle {
+        width: 140px;
+        height: 140px;
+    }
+
+    .ai-loader-percent-value {
+        font-size: 2rem;
+    }
+
+    .ai-loader-title {
+        font-size: 1.25rem;
+    }
+
+    .ai-loader-task-label {
+        min-width: 140px;
+        font-size: 0.6875rem;
+    }
+
+    .ai-loader-task-bar {
+        height: 10px;
+    }
+}

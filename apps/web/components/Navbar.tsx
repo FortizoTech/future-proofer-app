@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import "./navbar.css";
+import "../assets/css/navbar.css";
 
 const RealTimeClock = () => {
     const [time, setTime] = useState<string>("");
@@ -56,7 +56,7 @@ export default function Navbar() {
                 <Link href="/" className="navbar-logo-container group">
                     <div className="navbar-logo-wrapper">
                         <Image
-                            src="/logo-transparent.png"
+                            src="/logo/logo-transparent.png"
                             alt="Future Proofer Logo"
                             fill
                             className="object-contain"

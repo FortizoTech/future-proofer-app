@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import logoImage from "@/public/logo-transparent.png";
-import "./hero.css";
+import logoImage from "@/public/logo/logo-transparent.png";
+import "../../assets/css/hero.css";
 
 export default function Hero() {
     return (

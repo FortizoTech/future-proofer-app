@@ -43,7 +43,7 @@ const Preloader = ({ children }: { children: React.ReactNode }) => {
                          shadow-lg overflow-hidden z-10"
                         >
                             <img
-                                src="/logo-f.svg"
+                                src="/logo/logo-f.svg"
                                 alt="Future Proofer Logo"
                                 className="w-24 h-24 filter drop-shadow-[0_0_20px_rgba(0,191,255,0.8)]"
                             />

@@ -2,7 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { X, Check } from "lucide-react";
-import "./context-section.css";
+import "../../assets/css/context-section.css";
 
 const ListItem = ({ type, text }: { type: 'bad' | 'good', text: string }) => (
     <li className="context-list-item">

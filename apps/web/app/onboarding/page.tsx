@@ -1,26 +1,50 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+/**
+ * ============================================
+ * ONBOARDING WIZARD - COMPLETE IMPLEMENTATION
+ * ============================================
+ * 
+ * This wizard handles the complete onboarding flow for Future Proofer:
+ * 
+ * STEP 1: Mode Selection (Career or Business)
+ * STEP 2: Destination (Branching based on mode)
+ *   - CAREER: Career Goal selection
+ *   - BUSINESS: Business Stage selection
+ * STEP 3: Inventory (Mode-aware data collection)
+ *   - CAREER: Skills + CV Upload
+ *   - BUSINESS: Sector, Team Size, Revenue Stage
+ * STEP 4: Finalize Identity (Name, Email, Auth)
+ * 
+ * @file apps/web/app/onboarding/page.tsx
+ */
+
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Briefcase, Rocket, ChevronRight, Upload,
-    X, Check, Lightbulb, Map, Box, User, Paperclip
+    Briefcase, Rocket, ChevronRight, Upload, ChevronLeft,
+    X, Check, Lightbulb, Target, Search, RefreshCw,
+    Building2, Users, DollarSign, User, Mail, FileText,
+    Loader2, AlertCircle
 } from "lucide-react";
-import "./onboarding.css";
+import "../../assets/css/onboarding.css";
+import "../../assets/css/ai-loader.css";
+import AiLoader from "@/components/AiLoader";
+import {
+    OnboardingData,
+    UserMode,
+    CareerGoal,
+    BusinessStage,
+    RevenueStage,
+    uploadCV,
+    extractCVText,
+    completeOnboarding
+} from "@/lib/onboarding";
 
-// --- TYPE DEFINITIONS ---
-type Mode = "career" | "business" | "";
-type Goal = "skillset" | "venture" | "";
+// ============================================
+// ANIMATION VARIANTS
+// ============================================
 
-interface FormData {
-    mode: Mode;
-    goal: Goal;
-    skills: string[];
-    name: string;
-    email: string;
-}
-
-// --- ANIMATION VARIANTS ---
 const slideVariants = {
     enter: (direction: number) => ({
         x: direction > 0 ? 30 : -30,
@@ -38,7 +62,10 @@ const slideVariants = {
     }),
 };
 
-// --- BACKGROUND COMPONENT ---
+// ============================================
+// BACKGROUND COMPONENT
+// ============================================
+
 const WorldMapBackground = () => (
     <div className="onboarding-bg">
         <div className="onboarding-bg-map">
@@ -53,7 +80,10 @@ const WorldMapBackground = () => (
     </div>
 );
 
-// --- LOGO COMPONENT ---
+// ============================================
+// LOGO COMPONENT
+// ============================================
+
 const LogoIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -62,31 +92,174 @@ const LogoIcon = () => (
     </svg>
 );
 
+// ============================================
+// CONSTANTS
+// ============================================
+
+const TOTAL_STEPS = 4;
+
+// Career Goals Options
+const CAREER_GOALS: { value: CareerGoal; label: string; icon: typeof Search; description: string }[] = [
+    { value: 'FIND_JOB', label: 'Find a Job', icon: Search, description: 'Looking for new employment opportunities' },
+    { value: 'UPSKILL', label: 'Upskill', icon: RefreshCw, description: 'Improve my current skill set' },
+    { value: 'CAREER_SWITCH', label: 'Career Switch', icon: Target, description: 'Transition to a new career path' },
+];
+
+// Business Stage Options
+const BUSINESS_STAGES: { value: BusinessStage; label: string; description: string }[] = [
+    { value: 'IDEA', label: 'Idea Stage', description: 'Planning / Conceptualizing' },
+    { value: 'MVP', label: 'MVP', description: '0-6 months old' },
+    { value: 'EARLY', label: 'Early Stage', description: '6 months - 2 years' },
+    { value: 'GROWTH', label: 'Growth Stage', description: '2-5 years' },
+    { value: 'ESTABLISHED', label: 'Established', description: '5+ years' },
+];
+
+// Team Size Options
+const TEAM_SIZES = ['Solo', '2-5', '6-10', '11-50', '50+'];
+
+// Revenue Stage Options
+const REVENUE_STAGES: { value: RevenueStage; label: string }[] = [
+    { value: 'PRE_REVENUE', label: 'Pre-Revenue' },
+    { value: 'REVENUE', label: 'Generating Revenue' },
+    { value: 'PROFITABLE', label: 'Profitable' },
+];
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
 export default function OnboardingWizard() {
     const [step, setStep] = useState(1);
     const [direction, setDirection] = useState(0);
-    const [isSimulating, setIsSimulating] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const [data, setData] = useState<FormData>({
-        mode: "",
-        goal: "",
+    // File input ref for CV upload
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // ============================================
+    // ONBOARDING DATA STATE
+    // ============================================
+    const [data, setData] = useState<OnboardingData>({
+        mode: '',
         skills: [],
-        name: "",
-        email: ""
+        fullName: '',
+        email: '',
+        cvFile: null,
     });
 
+    // ============================================
+    // NAVIGATION FUNCTIONS
+    // ============================================
+
     const paginate = (newDirection: number) => {
+        setError(null);
         setDirection(newDirection);
-        setStep((prev) => prev + newDirection);
+        setStep((prev) => Math.max(1, Math.min(prev + newDirection, TOTAL_STEPS)));
     };
 
-    const handleFinalSubmit = () => {
-        if (!data.name || !data.email.includes("@")) {
-            alert("Please provide a valid name and email.");
+    const canProceed = (): boolean => {
+        switch (step) {
+            case 1:
+                return !!data.mode;
+            case 2:
+                if (data.mode === 'CAREER') {
+                    return !!data.careerGoal;
+                } else if (data.mode === 'BUSINESS') {
+                    return !!data.businessStage;
+                }
+                return false;
+            case 3:
+                if (data.mode === 'CAREER') {
+                    // At least one skill or CV uploaded
+                    return data.skills.length > 0 || !!data.cvFile;
+                } else if (data.mode === 'BUSINESS') {
+                    // Business sector is required
+                    return !!data.businessSector;
+                }
+                return false;
+            case 4:
+                return !!data.fullName && data.email.includes('@');
+            default:
+                return false;
+        }
+    };
+
+    // ============================================
+    // CV UPLOAD HANDLER
+    // ============================================
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        const allowedTypes = [
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            setError('Please upload a PDF or DOCX file');
             return;
         }
-        setIsSimulating(true);
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            setError('File size must be less than 5MB');
+            return;
+        }
+
+        setData({ ...data, cvFile: file });
+        setError(null);
+
+        // TODO: Extract text from CV for AI processing
+        // const extractedText = await extractCVText(file);
+        // if (extractedText) {
+        //     setData(prev => ({ ...prev, cvText: extractedText }));
+        // }
     };
+
+    // ============================================
+    // FINAL SUBMISSION HANDLER
+    // ============================================
+
+    const handleFinalSubmit = async () => {
+        if (!canProceed()) {
+            setError('Please complete all required fields');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            // Complete the onboarding flow
+            const result = await completeOnboarding(data);
+
+            if (result.success) {
+                setSuccessMessage(result.message);
+                // Redirect after a short delay
+                if (result.redirectUrl) {
+                    setTimeout(() => {
+                        window.location.href = result.redirectUrl!;
+                    }, 2000);
+                }
+            } else {
+                setError(result.message);
+            }
+        } catch (err) {
+            setError('An unexpected error occurred. Please try again.');
+            console.error('Submission error:', err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // ============================================
+    // RENDER
+    // ============================================
 
     return (
         <div className="onboarding-page">
@@ -96,14 +269,14 @@ export default function OnboardingWizard() {
             <div className="onboarding-card">
 
                 {/* Cancel Button */}
-                {!isSimulating && (
+                {!isSubmitting && !successMessage && (
                     <a href="/" className="onboarding-cancel" title="Cancel">
                         <X />
                     </a>
                 )}
 
                 {/* Header Branding */}
-                {!isSimulating && (
+                {!isSubmitting && !successMessage && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -113,7 +286,7 @@ export default function OnboardingWizard() {
                             <LogoIcon />
                         </div>
                         <h4 className="onboarding-brand">Future Proofer</h4>
-                        <span className="onboarding-step-badge">Step {step} of 3</span>
+                        <span className="onboarding-step-badge">Step {step} of {TOTAL_STEPS}</span>
                     </motion.div>
                 )}
 
@@ -121,7 +294,22 @@ export default function OnboardingWizard() {
                 <div className="onboarding-content">
                     <AnimatePresence initial={false} custom={direction} mode="wait">
 
-                        {!isSimulating ? (
+                        {/* Success Message */}
+                        {successMessage ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="onboarding-success"
+                            >
+                                <div className="onboarding-success-icon">
+                                    <Check />
+                                </div>
+                                <h2 className="onboarding-title">{successMessage}</h2>
+                                <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
+                                    Redirecting you...
+                                </p>
+                            </motion.div>
+                        ) : !isSubmitting ? (
                             <motion.div
                                 key={step}
                                 custom={direction}
@@ -135,117 +323,384 @@ export default function OnboardingWizard() {
                                 }}
                                 style={{ width: '100%' }}
                             >
-                                {/* STEP 1: MODE SELECTION */}
+                                {/* ============================================
+                                    STEP 1: MODE SELECTION (The Gateway)
+                                    ============================================ */}
                                 {step === 1 && (
                                     <div>
-                                        <h2 className="onboarding-title">Your Path Awaits</h2>
+                                        <h2 className="onboarding-title">Choose Your Path</h2>
+                                        <p className="onboarding-subtitle">
+                                            Select how you want to use Future Proofer
+                                        </p>
+
                                         <div className="onboarding-modes">
+                                            {/* Career Mode Button */}
                                             <button
-                                                onClick={() => { setData({ ...data, mode: 'career' }); paginate(1); }}
-                                                className="onboarding-mode-btn onboarding-mode-btn--career"
+                                                onClick={() => {
+                                                    setData({ ...data, mode: 'CAREER' });
+                                                    paginate(1);
+                                                }}
+                                                className={`onboarding-mode-btn onboarding-mode-btn--career ${data.mode === 'CAREER' ? 'selected' : ''}`}
                                             >
-                                                <span>Career Mode</span>
-                                                <Briefcase />
+                                                <div className="onboarding-mode-btn-content">
+                                                    <Briefcase />
+                                                    <span className="onboarding-mode-btn-title">Career Mode</span>
+                                                    <span className="onboarding-mode-btn-desc">
+                                                        Find jobs, upskill, or switch careers
+                                                    </span>
+                                                </div>
                                             </button>
 
+                                            {/* Business Mode Button */}
                                             <button
-                                                onClick={() => { setData({ ...data, mode: 'business' }); paginate(1); }}
-                                                className="onboarding-mode-btn onboarding-mode-btn--business"
+                                                onClick={() => {
+                                                    setData({ ...data, mode: 'BUSINESS' });
+                                                    paginate(1);
+                                                }}
+                                                className={`onboarding-mode-btn onboarding-mode-btn--business ${data.mode === 'BUSINESS' ? 'selected' : ''}`}
                                             >
-                                                <span>Business Mode</span>
-                                                <Rocket />
+                                                <div className="onboarding-mode-btn-content">
+                                                    <Rocket />
+                                                    <span className="onboarding-mode-btn-title">Business Mode</span>
+                                                    <span className="onboarding-mode-btn-desc">
+                                                        Validate, scale, or grow your venture
+                                                    </span>
+                                                </div>
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* STEP 2: SKILLS */}
+                                {/* ============================================
+                                    STEP 2: SET YOUR DESTINATION (Branching)
+                                    ============================================ */}
                                 {step === 2 && (
                                     <div>
-                                        <h2 className="onboarding-title">Map Your Current Skills</h2>
+                                        {/* CAREER MODE: Goal Selection */}
+                                        {data.mode === 'CAREER' && (
+                                            <>
+                                                <h2 className="onboarding-title">What's Your Goal?</h2>
+                                                <p className="onboarding-subtitle">
+                                                    This helps CareerGuide AI personalize your experience
+                                                </p>
 
-                                        <div style={{ marginBottom: '1rem' }}>
-                                            <label className="onboarding-label">What are your top 3 current strengths?</label>
-                                            <SkillInput
-                                                skills={data.skills}
-                                                addSkill={(s) => setData({ ...data, skills: [...data.skills, s] })}
-                                                removeSkill={(s) => setData({ ...data, skills: data.skills.filter(i => i !== s) })}
-                                            />
-                                        </div>
+                                                <div className="onboarding-options">
+                                                    {CAREER_GOALS.map((goal) => {
+                                                        const Icon = goal.icon;
+                                                        return (
+                                                            <button
+                                                                key={goal.value}
+                                                                onClick={() => setData({ ...data, careerGoal: goal.value })}
+                                                                className={`onboarding-option ${data.careerGoal === goal.value ? 'selected' : ''}`}
+                                                            >
+                                                                <Icon className="onboarding-option-icon" />
+                                                                <div>
+                                                                    <span className="onboarding-option-title">{goal.label}</span>
+                                                                    <span className="onboarding-option-desc">{goal.description}</span>
+                                                                </div>
+                                                                {data.careerGoal === goal.value && (
+                                                                    <Check className="onboarding-option-check" />
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
 
-                                        <div className="onboarding-upload">
-                                            <p className="onboarding-upload-title">Or, upload your CV for instant analysis</p>
-                                            <p className="onboarding-upload-desc">PDF or DOCX, max 5MB. AI will extract key skills.</p>
-                                            <button className="onboarding-upload-btn">
-                                                <Paperclip />
-                                                Upload CV
-                                            </button>
-                                        </div>
+                                        {/* BUSINESS MODE: Business Stage Selection */}
+                                        {data.mode === 'BUSINESS' && (
+                                            <>
+                                                <h2 className="onboarding-title">Business Stage</h2>
+                                                <p className="onboarding-subtitle">
+                                                    Where is your venture right now?
+                                                </p>
 
+                                                <div className="onboarding-options">
+                                                    {BUSINESS_STAGES.map((stage) => (
+                                                        <button
+                                                            key={stage.value}
+                                                            onClick={() => setData({ ...data, businessStage: stage.value })}
+                                                            className={`onboarding-option ${data.businessStage === stage.value ? 'selected' : ''}`}
+                                                        >
+                                                            <Building2 className="onboarding-option-icon" />
+                                                            <div>
+                                                                <span className="onboarding-option-title">{stage.label}</span>
+                                                                <span className="onboarding-option-desc">{stage.description}</span>
+                                                            </div>
+                                                            {data.businessStage === stage.value && (
+                                                                <Check className="onboarding-option-check" />
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Navigation */}
                                         <div className="onboarding-nav">
-                                            <button onClick={() => paginate(-1)} className="onboarding-back-btn">Back</button>
-                                            <button onClick={() => paginate(1)} className="onboarding-continue-btn">Continue</button>
+                                            <button onClick={() => paginate(-1)} className="onboarding-back-btn">
+                                                <ChevronLeft /> Back
+                                            </button>
+                                            <button
+                                                onClick={() => paginate(1)}
+                                                className="onboarding-continue-btn"
+                                                disabled={!canProceed()}
+                                            >
+                                                Continue <ChevronRight />
+                                            </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* STEP 3: FINALIZE */}
+                                {/* ============================================
+                                    STEP 3: MAP YOUR INVENTORY (Mode-Aware)
+                                    ============================================ */}
                                 {step === 3 && (
                                     <div>
-                                        <h2 className="onboarding-title">Finalize Your Future</h2>
+                                        {/* CAREER MODE: Skills & CV Upload */}
+                                        {data.mode === 'CAREER' && (
+                                            <>
+                                                <h2 className="onboarding-title">Your Current Skills</h2>
+                                                <p className="onboarding-subtitle">
+                                                    Add your strengths or upload your CV
+                                                </p>
 
+                                                {/* Skills Input */}
+                                                <div style={{ marginBottom: '1.5rem' }}>
+                                                    <label className="onboarding-label">
+                                                        Enter your top skills
+                                                    </label>
+                                                    <SkillInput
+                                                        skills={data.skills}
+                                                        addSkill={(s) => setData({ ...data, skills: [...data.skills, s] })}
+                                                        removeSkill={(s) => setData({ ...data, skills: data.skills.filter(i => i !== s) })}
+                                                    />
+                                                </div>
+
+                                                {/* Divider */}
+                                                <div className="onboarding-divider">
+                                                    <span>OR</span>
+                                                </div>
+
+                                                {/* CV Upload */}
+                                                <div className="onboarding-upload">
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                        onChange={handleFileSelect}
+                                                        style={{ display: 'none' }}
+                                                    />
+
+                                                    {data.cvFile ? (
+                                                        <div className="onboarding-upload-success">
+                                                            <FileText />
+                                                            <span>{data.cvFile.name}</span>
+                                                            <button
+                                                                onClick={() => setData({ ...data, cvFile: null })}
+                                                                className="onboarding-upload-remove"
+                                                            >
+                                                                <X />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <p className="onboarding-upload-title">
+                                                                Upload your CV for instant analysis
+                                                            </p>
+                                                            <p className="onboarding-upload-desc">
+                                                                PDF or DOCX, max 5MB. AI will extract key skills.
+                                                            </p>
+                                                            <button
+                                                                onClick={() => fileInputRef.current?.click()}
+                                                                className="onboarding-upload-btn"
+                                                            >
+                                                                <Upload />
+                                                                Upload CV
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* BUSINESS MODE: Business Details */}
+                                        {data.mode === 'BUSINESS' && (
+                                            <>
+                                                <h2 className="onboarding-title">Business Details</h2>
+                                                <p className="onboarding-subtitle">
+                                                    Help BusinessMate AI understand your venture
+                                                </p>
+
+                                                {/* Business Sector */}
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="onboarding-label">
+                                                        <Building2 size={16} style={{ marginRight: '0.5rem' }} />
+                                                        Business Sector / Industry
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. E-commerce, FinTech, Agriculture..."
+                                                        className="onboarding-input"
+                                                        value={data.businessSector || ''}
+                                                        onChange={(e) => setData({ ...data, businessSector: e.target.value })}
+                                                    />
+                                                </div>
+
+                                                {/* Team Size */}
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="onboarding-label">
+                                                        <Users size={16} style={{ marginRight: '0.5rem' }} />
+                                                        Team Size
+                                                    </label>
+                                                    <div className="onboarding-chips">
+                                                        {TEAM_SIZES.map((size) => (
+                                                            <button
+                                                                key={size}
+                                                                onClick={() => setData({ ...data, teamSize: size })}
+                                                                className={`onboarding-chip ${data.teamSize === size ? 'selected' : ''}`}
+                                                            >
+                                                                {size}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Revenue Stage */}
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <label className="onboarding-label">
+                                                        <DollarSign size={16} style={{ marginRight: '0.5rem' }} />
+                                                        Revenue Stage
+                                                    </label>
+                                                    <div className="onboarding-chips">
+                                                        {REVENUE_STAGES.map((rev) => (
+                                                            <button
+                                                                key={rev.value}
+                                                                onClick={() => setData({ ...data, revenueStage: rev.value })}
+                                                                className={`onboarding-chip ${data.revenueStage === rev.value ? 'selected' : ''}`}
+                                                            >
+                                                                {rev.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Navigation */}
+                                        <div className="onboarding-nav">
+                                            <button onClick={() => paginate(-1)} className="onboarding-back-btn">
+                                                <ChevronLeft /> Back
+                                            </button>
+                                            <button
+                                                onClick={() => paginate(1)}
+                                                className="onboarding-continue-btn"
+                                                disabled={!canProceed()}
+                                            >
+                                                Continue <ChevronRight />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ============================================
+                                    STEP 4: FINALIZE IDENTITY (Auth Creation)
+                                    ============================================ */}
+                                {step === 4 && (
+                                    <div>
+                                        <h2 className="onboarding-title">Finalize Your Profile</h2>
+                                        <p className="onboarding-subtitle">
+                                            Create your account to unlock your personalized roadmap
+                                        </p>
+
+                                        {/* Full Name Input */}
                                         <div style={{ marginBottom: '1rem' }}>
                                             <label className="onboarding-label">Full Name</label>
                                             <div className="onboarding-input-wrapper">
+                                                <User className="onboarding-input-icon" />
                                                 <input
                                                     type="text"
                                                     placeholder="e.g. Amina Jallow"
-                                                    className="onboarding-input"
-                                                    value={data.name}
-                                                    onChange={(e) => setData({ ...data, name: e.target.value })}
+                                                    className="onboarding-input onboarding-input--with-icon"
+                                                    value={data.fullName}
+                                                    onChange={(e) => setData({ ...data, fullName: e.target.value })}
                                                 />
                                             </div>
                                         </div>
 
+                                        {/* Email Input */}
                                         <div style={{ marginBottom: '1.5rem' }}>
                                             <label className="onboarding-label">Email Address</label>
                                             <div className="onboarding-input-wrapper">
+                                                <Mail className="onboarding-input-icon" />
                                                 <input
                                                     type="email"
                                                     placeholder="you@example.com"
-                                                    className="onboarding-input"
+                                                    className="onboarding-input onboarding-input--with-icon"
                                                     value={data.email}
                                                     onChange={(e) => setData({ ...data, email: e.target.value })}
                                                 />
                                             </div>
                                         </div>
 
+                                        {/* Error Message */}
+                                        {error && (
+                                            <div className="onboarding-error">
+                                                <AlertCircle />
+                                                <span>{error}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Submit Button */}
                                         <button
                                             onClick={handleFinalSubmit}
-                                            className="onboarding-continue-btn"
-                                            style={{ width: '100%', height: '3.5rem', fontSize: '1rem' }}
+                                            className="onboarding-submit-btn"
+                                            disabled={!canProceed() || isSubmitting}
                                         >
-                                            Unlock My Roadmap <ChevronRight style={{ width: '1.25rem', height: '1.25rem', marginLeft: '0.5rem' }} />
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="onboarding-spinner" />
+                                                    Creating Account...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Unlock My Roadmap
+                                                    <ChevronRight />
+                                                </>
+                                            )}
                                         </button>
 
+                                        {/* Back Button */}
                                         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                                            <button onClick={() => paginate(-1)} className="onboarding-back-btn">Back</button>
+                                            <button onClick={() => paginate(-1)} className="onboarding-back-btn">
+                                                <ChevronLeft /> Back
+                                            </button>
                                         </div>
+
+                                        {/* Terms Text */}
+                                        <p className="onboarding-terms">
+                                            By continuing, you agree to our Terms of Service and Privacy Policy
+                                        </p>
                                     </div>
                                 )}
                             </motion.div>
                         ) : (
-                            <AiLoader onComplete={() => alert("Flow Complete: Dashboard Redirect")} />
+                            <AiLoader />
                         )}
 
                     </AnimatePresence>
                 </div>
 
                 {/* Step Indicator Dots */}
-                {!isSimulating && (
+                {!isSubmitting && !successMessage && (
                     <div className="onboarding-dots">
-                        <div className={`onboarding-dot ${step >= 1 ? 'onboarding-dot--active' : ''}`} />
-                        <span className="onboarding-step-text">{step} / 3</span>
+                        {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+                            <div
+                                key={i}
+                                className={`onboarding-dot ${step > i ? 'onboarding-dot--completed' : ''} ${step === i + 1 ? 'onboarding-dot--active' : ''}`}
+                            />
+                        ))}
                     </div>
                 )}
             </div>
@@ -254,28 +709,39 @@ export default function OnboardingWizard() {
             <div className="onboarding-footer">
                 No credit card required • Instant AI Match
             </div>
-
-            {/* Decorative Star */}
-            <svg className="onboarding-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 2L9 9l-7 3 7 3 3 7 3-7 7-3-7-3-3-7z" />
-            </svg>
         </div>
     );
 }
 
 
-// --- SKILL INPUT COMPONENT ---
-const SkillInput = ({ skills, addSkill, removeSkill }: { skills: string[], addSkill: (s: string) => void, removeSkill: (s: string) => void }) => {
-    const [curr, setCurr] = useState("");
+// ============================================
+// SKILL INPUT COMPONENT
+// ============================================
+
+interface SkillInputProps {
+    skills: string[];
+    addSkill: (skill: string) => void;
+    removeSkill: (skill: string) => void;
+}
+
+const SkillInput = ({ skills, addSkill, removeSkill }: SkillInputProps) => {
+    const [current, setCurrent] = useState("");
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && curr.trim().length > 0) {
-            addSkill(curr.trim());
-            setCurr("");
+        if (e.key === 'Enter' && current.trim().length > 0) {
+            e.preventDefault();
+            if (!skills.includes(current.trim())) {
+                addSkill(current.trim());
+            }
+            setCurrent("");
         }
     };
 
     return (
-        <div className="onboarding-input-wrapper" onClick={() => document.getElementById('skill-input')?.focus()}>
+        <div
+            className="onboarding-skill-input"
+            onClick={() => document.getElementById('skill-input')?.focus()}
+        >
             {skills.length > 0 && (
                 <div className="onboarding-skills">
                     {skills.map((s) => (
@@ -290,119 +756,11 @@ const SkillInput = ({ skills, addSkill, removeSkill }: { skills: string[], addSk
                 id="skill-input"
                 type="text"
                 className="onboarding-input"
-                placeholder={skills.length === 0 ? "Type to add skills..." : "Add more..."}
-                value={curr}
-                onChange={(e) => setCurr(e.target.value)}
+                placeholder={skills.length === 0 ? "Type a skill and press Enter..." : "Add more..."}
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
                 onKeyDown={handleKeyDown}
             />
         </div>
     );
-}
-
-// --- AI LOADER COMPONENT ---
-const AiLoader = ({ onComplete }: { onComplete: () => void }) => {
-    const [progress, setProgress] = useState(0);
-    const [messageIndex, setMessageIndex] = useState(0);
-
-    const messages = [
-        "Analyzing Skill Gaps...",
-        "Mapping Opportunities...",
-        "Crafting Personalized Roadmap...",
-    ];
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setProgress((old) => {
-                if (old >= 100) {
-                    clearInterval(timer);
-                    setTimeout(onComplete, 800);
-                    return 100;
-                }
-                return Math.min(old + Math.random() * 4, 100);
-            });
-        }, 100);
-
-        const msgTimer = setInterval(() => {
-            setMessageIndex(prev => (prev + 1) % messages.length);
-        }, 1500);
-
-        return () => { clearInterval(timer); clearInterval(msgTimer); };
-    }, []);
-
-    const radius = 60;
-    const stroke = 6;
-    const normalizedRadius = radius - stroke * 2;
-    const circumference = normalizedRadius * 2 * Math.PI;
-    const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="onboarding-loader"
-        >
-            <div className="onboarding-loader-circle">
-                <svg
-                    height={radius * 2}
-                    width={radius * 2}
-                    className="onboarding-loader-svg"
-                >
-                    <circle
-                        className="onboarding-loader-bg"
-                        strokeWidth={stroke}
-                        fill="transparent"
-                        r={normalizedRadius}
-                        cx={radius}
-                        cy={radius}
-                    />
-                    <circle
-                        className="onboarding-loader-progress"
-                        fill="transparent"
-                        strokeWidth={stroke}
-                        strokeDasharray={circumference + ' ' + circumference}
-                        style={{ strokeDashoffset }}
-                        strokeLinecap="round"
-                        r={normalizedRadius}
-                        cx={radius}
-                        cy={radius}
-                    />
-                </svg>
-                <div className="onboarding-loader-percent">{Math.floor(progress)}%</div>
-            </div>
-
-            <h2 className="onboarding-loader-title">Synthesizing Your Future</h2>
-
-            <motion.p
-                key={messageIndex}
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="onboarding-loader-message"
-            >
-                {messages[messageIndex]}
-            </motion.p>
-
-            <p className="onboarding-loader-subtitle">Analyzing Market Trends in ECOWAS</p>
-
-            <div className="onboarding-loader-bars">
-                <div className="onboarding-loader-bar-item">
-                    <span className="onboarding-loader-bar-label">Analyzing Skill Gaps...</span>
-                    <div className="onboarding-loader-bar">
-                        <div className="onboarding-loader-bar-fill" style={{ width: `${Math.min(progress * 1.5, 100)}%` }} />
-                    </div>
-                </div>
-                <div className="onboarding-loader-bar-item">
-                    <span className="onboarding-loader-bar-label">Mapping Opportunities</span>
-                    <div className="onboarding-loader-bar">
-                        <div className="onboarding-loader-bar-fill" style={{ width: `${Math.min((progress - 20) * 1.5, 100)}%` }} />
-                    </div>
-                </div>
-                <div className="onboarding-loader-bar-item">
-                    <span className="onboarding-loader-bar-label">Crafting Personalized Roadmap...</span>
-                    <div className="onboarding-loader-bar">
-                        <div className="onboarding-loader-bar-fill" style={{ width: `${Math.min((progress - 40) * 1.5, 100)}%` }} />
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
+};
