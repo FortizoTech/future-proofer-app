@@ -1,19 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import Link from 'next/link';
 import Image from 'next/image';
 import Head from 'next/head';
 import '@/assets/css/dashboard.css';
-
-// Material Icons font
-const MaterialIconsLink = () => (
-  <link
-    href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
-    rel="stylesheet"
-  />
-);
+import { MentorshipRequestModal, type MentorshipProfile } from '@/components/mentorship/MentorshipRequestModal';
 
 // Material Icons component
 const MaterialIcon = ({ name, className = '' }: { name: string; className?: string }) => (
@@ -22,144 +16,660 @@ const MaterialIcon = ({ name, className = '' }: { name: string; className?: stri
   </span>
 );
 
-// Components
-const ProfileCard = () => (
-  <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-    <div className="flex flex-col items-center text-center">
-      <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-primary/20 overflow-hidden">
-        <Image
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZLC8DAztwC8tscvE479O4SSYSabNx53eBNK7ayKTK1fEFDoKHUAqCakeqNgXrNdFNpAoO2cCbd-zn-jXgtZCTkVOnTfUByyLel3blx1_9V-8BrhZSlbgpHs3ywlj8_SVVBI12SM8H4w6_B_nllUbhUTUb4epty57xmWvZ7sDLcnyHCRuzXuckCb7WNhriIQWUkWOPBDmkWo0081OPSkpXXZDe64ir8BJFb3twBR6JyCf5f5aMqd5wDjmbD-BWXJqs6VnBVocN3FSM"
-          alt="User Avatar"
-          width={80}
-          height={80}
-          className="object-cover w-full h-full"
-        />
+// Sidebar Navigation
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sidebar-header">
+      <div className="sidebar-logo">
+        <div className="logo-icon">
+          <MaterialIcon name="auto_awesome" className="text-white" />
+        </div>
+        <span className="sidebar-logo-text">Thinkforge</span>
       </div>
-      <h2 className="text-xl font-extrabold">Alex Johnson</h2>
-      <p className="text-sm opacity-60 mb-4">UI/UX Product Designer • Lagos, NG</p>
-      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-        <div className="bg-primary h-full w-[78%]"></div>
-      </div>
-      <p className="text-[11px] font-bold mt-2 text-primary uppercase">Profile Completion: 78%</p>
     </div>
-  </div>
-);
 
-const DocumentsCard = () => (
-  <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-    <h3 className="font-bold text-sm mb-4 uppercase tracking-wider opacity-60">Connected Documents</h3>
-    <div className="space-y-3">
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 group cursor-pointer hover:border-primary/30 transition-colors">
-        <MaterialIcon name="description" className="text-primary" />
-        <div className="flex-1 overflow-hidden">
-          <p className="text-sm font-semibold truncate">Curriculum Vitae 2026.pdf</p>
-          <p className="text-[10px] opacity-50">Last synced: 2h ago</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 group cursor-pointer hover:border-primary/30 transition-colors">
-        <MaterialIcon name="verified" className="text-green-500" />
-        <div className="flex-1 overflow-hidden">
-          <p className="text-sm font-semibold truncate">Skill Certifications.zip</p>
-          <p className="text-[10px] opacity-50">Last synced: Yesterday</p>
-        </div>
-      </div>
-    </div>
-    <button className="w-full mt-4 py-2 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-sm font-bold opacity-60 hover:opacity-100 hover:border-primary transition-all">
-      + Add Resume/Portfolio
-    </button>
-  </div>
-);
+    <nav className="sidebar-nav">
+      <Link href="/dashboard" className="sidebar-nav-item active">
+        <MaterialIcon name="dashboard" />
+        <span>Dashboard</span>
+      </Link>
+      <Link href="#" className="sidebar-nav-item">
+        <MaterialIcon name="explore" />
+        <span>Career Discovery</span>
+      </Link>
+      <Link href="/skills-gap" className="sidebar-nav-item">
+        <MaterialIcon name="assignment" />
+        <span>Skills Gap</span>
+      </Link>
+      <Link href="/thinkforge" className="sidebar-nav-item">
+        <MaterialIcon name="lightbulb" />
+        <span>Thinkforge</span>
+      </Link>
+      <Link href="/network" className="sidebar-nav-item">
+        <MaterialIcon name="people" />
+        <span>Network</span>
+      </Link>
+    </nav>
 
-const MetricCard = ({ title, value, icon, trend, children }: { title: string; value: string; icon: string; trend?: string; children: React.ReactNode }) => (
-  <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
-    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-      <MaterialIcon name={icon} className="text-6xl" />
-    </div>
-    <p className="text-sm font-bold opacity-60">{title}</p>
-    <div className="flex items-baseline gap-2 mt-2">
-      <h4 className="text-3xl font-extrabold tracking-tight">{value}</h4>
-      {trend && (
-        <span className="text-green-500 text-sm font-bold flex items-center">
-          <MaterialIcon name="trending_up" className="text-base" /> {trend}
-        </span>
-      )}
-    </div>
-    {children}
-  </div>
-);
-
-const AIChat = () => {
-  const [message, setMessage] = useState('');
-  
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden flex flex-col min-h-[400px]">
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-primary/[0.02]">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center">
-            <MaterialIcon name="auto_awesome" className="text-sm" />
-          </div>
-          <span className="font-bold text-sm tracking-tight">Ask CareerMate AI</span>
-        </div>
-        <span className="px-2 py-1 rounded bg-green-500/10 text-green-500 text-[10px] font-bold uppercase">Online</span>
-      </div>
-      <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-        <div className="flex gap-3 max-w-[85%]">
-          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center">
-            <MaterialIcon name="auto_awesome" className="text-sm" />
-          </div>
-          <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm">
-            Welcome back, Alex! Based on your recent profile update, I've identified 3 high-growth roles in the Fintech sector that match your design skills. Would you like to see the required skill gaps?
-          </div>
-        </div>
-        <div className="flex gap-3 ml-auto flex-row-reverse max-w-[85%]">
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex-shrink-0 flex items-center justify-center">
-            <MaterialIcon name="person" className="text-sm" />
-          </div>
-          <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm">
-            Yes, please. Also, show me some local mentors who specialize in Fintech UI.
-          </div>
-        </div>
-        <div className="flex gap-3 max-w-[85%] animate-pulse">
-          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center">
-            <MaterialIcon name="auto_awesome" className="text-sm" />
-          </div>
-          <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm italic">
-            Mapping mentorship network...
-          </div>
-        </div>
-      </div>
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-        <div className="relative">
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ask about career paths..."
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+    <div className="sidebar-footer">
+      <div className="sidebar-user">
+        <div className="sidebar-user-avatar">
+          <Image
+            src="https://randomuser.me/api/portraits/men/32.jpg"
+            alt="Kwame Adewale"
+            width={36}
+            height={36}
+            className="rounded-full object-cover"
           />
-          <button className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors">
-            <MaterialIcon name="send" className="text-sm" />
+        </div>
+        <div className="sidebar-user-info">
+          <p className="sidebar-user-name">Kwame Adewale</p>
+          <p className="sidebar-user-role">Junior Developer</p>
+        </div>
+      </div>
+      <button className="sidebar-settings">
+        <MaterialIcon name="settings" />
+      </button>
+    </div>
+  </aside>
+);
+
+// Readiness Progress Card
+const ReadinessCard = () => (
+  <div className="readiness-card">
+    <div className="readiness-flex">
+      <div className="readiness-progress-container">
+        <svg className="readiness-circle" viewBox="0 0 200 200">
+          <circle
+            cx="100"
+            cy="100"
+            r="85"
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="12"
+          />
+          <circle
+            cx="100"
+            cy="100"
+            r="85"
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="12"
+            strokeDasharray="534"
+            strokeDashoffset="117"
+            strokeLinecap="round"
+            transform="rotate(-90 100 100)"
+          />
+          <text x="100" y="100" textAnchor="middle" dy="10" className="readiness-percentage">
+            78%
+          </text>
+          <text x="100" y="125" textAnchor="middle" className="readiness-ready-text">
+            READY
+          </text>
+        </svg>
+      </div>
+
+      <div className="readiness-content">
+        <h3 className="readiness-title">Software Developer Readiness</h3>
+        <p className="readiness-subtitle">
+          AI analysis of your GitHub contributions, Python projects, and recent technical interview simulations indicates high proficiency in Backend systems.
+        </p>
+
+        <div className="readiness-tags">
+          <span className="readiness-tag">Python</span>
+          <span className="readiness-tag">Django</span>
+          <span className="readiness-tag">PostgreSQL</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Market Heatmap Card
+const MarketHeatmap = () => (
+  <div className="market-heatmap-card">
+    <div className="market-heatmap-header">
+      <h3 className="market-heatmap-title">Market Heatmap</h3>
+      <span className="market-heatmap-badge">HIGH DEMAND</span>
+    </div>
+
+    <div className="market-heatmap-map">
+      <Image
+        src="/api/placeholder/400/250"
+        alt="Africa Market Heatmap"
+        width={400}
+        height={250}
+        className="w-full h-auto"
+      />
+      <div className="market-heatmap-overlay">
+        <div className="market-heatmap-location" style={{ top: '35%', left: '45%' }}>
+          <div className="market-heatmap-dot pulsing"></div>
+          <span className="market-heatmap-label">West Africa Hiring Surge</span>
+        </div>
+      </div>
+    </div>
+
+    <div className="market-heatmap-stats">
+      <div className="market-stat">
+        <MaterialIcon name="trending_up" className="text-green-500" />
+        <div>
+          <p className="market-stat-value">5,400 roles</p>
+          <p className="market-stat-label">Lagos, Nigeria</p>
+        </div>
+      </div>
+      <div className="market-stat">
+        <MaterialIcon name="trending_up" className="text-green-500" />
+        <div>
+          <p className="market-stat-value">2,100 roles</p>
+          <p className="market-stat-label">Nairobi, Kenya</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Suggested Mentors Card
+const SuggestedMentors = ({ onRequestMentorship }: { onRequestMentorship: (mentor: MentorshipProfile) => void }) => {
+  const mentors = [
+    {
+      name: 'Fatou Bah',
+      title: 'Senior Lead at Google Inc',
+      location: 'California',
+      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+      verified: true
+    },
+    {
+      name: 'David Kone',
+      title: 'CTO at FintechHub',
+      location: 'Accra',
+      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+      verified: true
+    }
+  ];
+
+  return (
+    <div className="suggested-mentors-card">
+      <h3 className="suggested-mentors-title">Suggested Mentors</h3>
+
+      <div className="mentors-list">
+        {mentors.map((mentor, idx) => (
+          <div key={idx} className="mentor-item">
+            <div className="mentor-avatar">
+              <Image
+                src={mentor.avatar}
+                alt={mentor.name}
+                width={48}
+                height={48}
+                className="rounded-full object-cover"
+              />
+            </div>
+            <div className="mentor-info">
+              <div className="flex items-center gap-1">
+                <p className="mentor-name">{mentor.name}</p>
+                {mentor.verified && <MaterialIcon name="verified" className="text-primary" />}
+              </div>
+              <p className="mentor-title">{mentor.title}</p>
+              <p className="mentor-location">{mentor.location}</p>
+            </div>
+            <button
+              className="mentor-request-btn"
+              onClick={() =>
+                onRequestMentorship({
+                  name: mentor.name,
+                  headline: mentor.title,
+                  location: mentor.location,
+                  avatarUrl: mentor.avatar,
+                })
+              }
+            >
+              Request Mentorship
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Career Milestones Card
+const CareerMilestones = () => {
+  const milestones = [
+    {
+      status: 'completed',
+      date: 'TODAY',
+      title: 'Completed Advanced API Design Module',
+      description: 'Mastered REST/GraphQL architecture and typed, integration techniques',
+      icon: 'check_circle',
+      color: 'blue'
+    },
+    {
+      status: 'completed',
+      date: 'YESTERDAY',
+      title: 'Portfolio Site Live',
+      description: 'Deployed personal portfolio built with an advanced CI/CD pipeline',
+      icon: 'rocket_launch',
+      color: 'green'
+    },
+    {
+      status: 'pending',
+      date: 'PENDING',
+      title: 'Mentor Matching: Segun O.',
+      description: 'Paired with a Senior Architect at Flaystack for weekly reviews',
+      icon: 'schedule',
+      color: 'orange'
+    }
+  ];
+
+  return (
+    <div className="career-milestones-card">
+      <div className="career-milestones-header">
+        <h3 className="career-milestones-title">Career Milestones</h3>
+        <a href="#" className="view-history-link">View History</a>
+      </div>
+
+      <div className="milestones-list">
+        {milestones.map((milestone, idx) => (
+          <div key={idx} className="milestone-item">
+            <div className={`milestone-icon milestone-icon-${milestone.color}`}>
+              <MaterialIcon name={milestone.icon} />
+            </div>
+            <div className="milestone-content">
+              <div className="milestone-date">{milestone.date}</div>
+              <h4 className="milestone-title">{milestone.title}</h4>
+              <p className="milestone-description">{milestone.description}</p>
+            </div>
+            {milestone.status === 'completed' && (
+              <MaterialIcon name="check_circle" className="milestone-status text-green-500" />
+            )}
+            {milestone.status === 'pending' && (
+              <MaterialIcon name="schedule" className="milestone-status text-orange-500" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// AI Insights Card
+const AIInsights = () => (
+  <div className="ai-insights-card">
+    <div className="ai-insight-item">
+      <MaterialIcon name="info" className="text-blue-500" />
+      <div>
+        <h4 className="ai-insight-title">CAREER TIP</h4>
+        <p className="ai-insight-text">
+          Updating your GitHub profile around 80% will automatically refresh your skillset with AI recalibrations to keep current market insights
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
+// Zen Overlay View (AI Response)
+const ZenOverlay = ({ isOpen, onClose, conversationHistory, isLoading, onAskNext }: {
+  isOpen: boolean;
+  onClose: () => void;
+  conversationHistory: Array<{ role: 'user' | 'ai', content: any }>;
+  isLoading: boolean;
+  onAskNext: (question: string) => void;
+}) => {
+  const [isQuickReplyOpen, setIsQuickReplyOpen] = useState(false);
+  const [quickReplyText, setQuickReplyText] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isQuickReplyOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isQuickReplyOpen]);
+
+  const handleEditClick = () => {
+    setIsQuickReplyOpen(!isQuickReplyOpen);
+  };
+
+  const handleQuickSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (quickReplyText.trim()) {
+      onAskNext(quickReplyText.trim());
+      setQuickReplyText('');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const renderSection = (section: any, index: number) => {
+    switch (section.type) {
+      case 'heading':
+        const level = Math.min(section.level || 1, 3);
+        const headingClasses = {
+          1: 'text-2xl font-bold mb-4 text-gray-900',
+          2: 'text-xl font-semibold mb-3 mt-6 text-gray-800',
+          3: 'text-lg font-medium mb-2 mt-4 text-gray-700',
+        }[level as 1 | 2 | 3] || 'text-xl font-bold mb-4';
+
+        if (level === 1) return <h1 key={index} className={headingClasses}>{section.text}</h1>;
+        if (level === 2) return <h2 key={index} className={headingClasses}>{section.text}</h2>;
+        return <h3 key={index} className={headingClasses}>{section.text}</h3>;
+
+      case 'paragraph':
+        return <p key={index} className="mb-4 text-gray-600 leading-relaxed">{section.text}</p>;
+
+      case 'emphasis':
+        const intentStyles = {
+          important: 'bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-4',
+          statistic: 'bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-4 font-mono',
+          warning: 'bg-amber-50 border-l-4 border-amber-500 text-amber-700 p-4 mb-4',
+          insight: 'bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-4 italic',
+        }[section.intent as string] || 'bg-gray-50 border-l-4 border-gray-500 p-4 mb-4';
+        return (
+          <div key={index} className={intentStyles}>
+            <div className="flex items-center gap-2 mb-1">
+              <MaterialIcon name={
+                section.intent === 'statistic' ? 'analytics' :
+                  section.intent === 'warning' ? 'warning' :
+                    section.intent === 'insight' ? 'lightbulb' : 'info'
+              } className="text-sm" />
+              <span className="text-xs font-bold uppercase tracking-wider">{section.intent}</span>
+            </div>
+            {section.text}
+          </div>
+        );
+
+      case 'list':
+        if (section.style === 'cards') {
+          return (
+            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {section.items.map((item: any, i: number) => (
+                <div key={i} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <h4 className="font-bold text-gray-900 mb-1">{item.title}</h4>
+                  <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                  {item.link && (
+                    <a href={item.link.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
+                      {item.link.label} <MaterialIcon name="open_in_new" className="text-[10px]" />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        }
+        if (section.style === 'steps') {
+          return (
+            <div key={index} className="space-y-4 mb-6">
+              {section.items.map((item: any, i: number) => (
+                <div key={i} className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">{item.title}</h4>
+                    <p className="text-sm text-gray-600">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        return (
+          <ul key={index} className="list-disc pl-5 mb-4 space-y-2 text-gray-600">
+            {section.items.map((item: any, i: number) => (
+              <li key={i}>
+                <span className="font-semibold text-gray-800">{item.title}:</span> {item.description}
+              </li>
+            ))}
+          </ul>
+        );
+
+      case 'sources':
+        return (
+          <div key={index} className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <MaterialIcon name="library_books" className="text-sm" />
+              Verified Sources
+            </h4>
+            <div className="flex flex-wrap gap-3">
+              {section.items.map((item: any, i: number) => (
+                <a
+                  key={i}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:border-primary hover:text-primary transition-colors flex items-center gap-1"
+                >
+                  {item.label}
+                  <MaterialIcon name="open_in_new" className="text-[10px]" />
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="zen-overlay-container">
+      <div className="zen-overlay-backdrop" onClick={onClose}></div>
+      <div className="zen-overlay-panel">
+        <div className="zen-header">
+          <div className="zen-header-left">
+            <div className="zen-dot"></div>
+            <span className="zen-label">AI CAREER FORESIGHT</span>
+          </div>
+          <button className="zen-close" onClick={onClose}>
+            <MaterialIcon name="close" />
           </button>
+        </div>
+
+        <div className="zen-content">
+          <div className="zen-answer-container">
+            {conversationHistory.length === 0 && !isLoading ? (
+              <div className="zen-empty-state">
+                <MaterialIcon name="chat" className="text-gray-400 text-4xl" />
+                <p className="mt-4 text-gray-500">Start a conversation with CareerMate AI</p>
+              </div>
+            ) : (
+              <div className="zen-conversation">
+                {conversationHistory.map((message, index) => (
+                  <div key={index} className={`zen-message ${message.role === 'user' ? 'zen-message-user' : 'zen-message-ai'}`}>
+                    {message.role === 'user' ? (
+                      <div className="zen-user-message">
+                        <p className="zen-user-text">{message.content}</p>
+                      </div>
+                    ) : (
+                      <div className="zen-ai-message">
+                        {message.content && message.content.sections ? (
+                          message.content.sections.map((section: any, idx: number) => renderSection(section, idx))
+                        ) : message.content && typeof message.content === 'string' ? (
+                          <p className="text-gray-600">{message.content}</p>
+                        ) : (
+                          <p className="text-gray-500 italic">I couldn't generate a structured response. Please try again.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="zen-message zen-message-ai">
+                    <div className="zen-loading">
+                      <MaterialIcon name="hourglass_empty" className="animate-spin text-primary text-4xl" />
+                      {/* <p className="mt-4 text-gray-500">Analyzing African market data...</p> */}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1]?.role === 'ai' && conversationHistory[conversationHistory.length - 1]?.content && conversationHistory[conversationHistory.length - 1]?.content.next_questions && (
+            <div className="zen-next-steps mt-8">
+              <p className="zen-next-label">NEXT QUESTIONS</p>
+              <div className="zen-next-buttons">
+                {Array.isArray(conversationHistory[conversationHistory.length - 1]?.content.next_questions) ? (
+                  conversationHistory[conversationHistory.length - 1]?.content.next_questions.map((q: string, idx: number) => (
+                    <button
+                      key={idx}
+                      className="zen-next-btn"
+                      onClick={() => onAskNext(q)}
+                    >
+                      {q}
+                    </button>
+                  ))
+                ) : conversationHistory[conversationHistory.length - 1]?.content.next_questions.items ? (
+                  conversationHistory[conversationHistory.length - 1]?.content.next_questions.items.map((item: any, idx: number) => (
+                    <button
+                      key={idx}
+                      className="zen-next-btn"
+                      onClick={() => onAskNext(item.text)}
+                    >
+                      {item.text}
+                    </button>
+                  ))
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="zen-footer">
+          <div className={`zen-footer-container ${isQuickReplyOpen ? 'quick-reply-active' : ''}`}>
+            <button className="zen-edit-btn" onClick={handleEditClick}>
+              <MaterialIcon name="edit" />
+            </button>
+
+            <div className="zen-quick-reply-wrapper">
+              <form onSubmit={handleQuickSubmit} className="zen-quick-reply-form">
+                <div className="zen-quick-input-container">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="zen-quick-input"
+                    placeholder="Type a quick follow-up..."
+                    value={quickReplyText}
+                    onChange={(e) => setQuickReplyText(e.target.value)}
+                  />
+                  <button type="submit" className="zen-quick-send-btn">
+                    <MaterialIcon name="arrow_upward" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const InsightCard = ({ type, title, description, actionText }: { type: 'warning' | 'trend'; title: string; description: string; actionText: string }) => {
-  const icon = type === 'warning' ? 'warning' : 'auto_graph';
-  const color = type === 'warning' ? 'text-yellow-500' : 'text-green-500';
-  const borderColor = type === 'warning' ? 'border-yellow-500' : 'border-green-500';
-  
+// Premium Modal Component
+const PremiumModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  if (!isOpen) return null;
+
   return (
-    <div className={`bg-white dark:bg-slate-900 p-4 rounded-xl border-l-4 ${borderColor} border-y-slate-200 border-r-slate-200 dark:border-y-slate-800 dark:border-r-slate-800 shadow-sm`}>
-      <div className="flex items-start gap-3">
-        <MaterialIcon name={icon} className={`${color} text-xl mt-0.5`} />
-        <div>
-          <p className="font-bold text-sm">{title}</p>
-          <p className="text-xs opacity-70 mt-1">{description}</p>
-          <button className="text-[11px] font-bold text-primary mt-2 flex items-center gap-1 hover:underline uppercase">
-            {actionText} <MaterialIcon name="chevron_right" className="text-xs" />
+    <>
+      <div className="premium-modal-overlay" onClick={onClose}></div>
+      <div className="premium-modal">
+        <button className="premium-modal-close" onClick={onClose}>
+          <MaterialIcon name="close" />
+        </button>
+
+        <div className="premium-modal-header">
+          <div className="premium-modal-icon">
+            <MaterialIcon name="workspace_premium" className="text-4xl" />
+          </div>
+          <h2 className="premium-modal-title">Upgrade to Premium</h2>
+          <p className="premium-modal-subtitle">
+            Unlock unlimited AI conversations and advanced career insights
+          </p>
+        </div>
+
+        <div className="premium-features">
+          <div className="premium-feature">
+            <MaterialIcon name="check_circle" className="text-green-500" />
+            <span>Unlimited AI Career Coach conversations</span>
+          </div>
+          <div className="premium-feature">
+            <MaterialIcon name="check_circle" className="text-green-500" />
+            <span>Advanced market analytics and predictions</span>
+          </div>
+          <div className="premium-feature">
+            <MaterialIcon name="check_circle" className="text-green-500" />
+            <span>Priority mentor matching</span>
+          </div>
+          <div className="premium-feature">
+            <MaterialIcon name="check_circle" className="text-green-500" />
+            <span>Personalized learning paths</span>
+          </div>
+          <div className="premium-feature">
+            <MaterialIcon name="check_circle" className="text-green-500" />
+            <span>Early access to new features</span>
+          </div>
+        </div>
+
+        <div className="premium-pricing">
+          <div className="premium-price">
+            <span className="premium-currency">$</span>
+            <span className="premium-amount">29</span>
+            <span className="premium-period">/month</span>
+          </div>
+          <p className="premium-trial">7-day free trial included</p>
+        </div>
+
+        <div className="premium-modal-actions">
+          <button className="premium-upgrade-btn">
+            Upgrade Now
+          </button>
+          <button className="premium-cancel-btn" onClick={onClose}>
+            Maybe Later
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Ask CareerMate AI Input
+const AskCareerMateAI = ({ onAsk }: { onAsk: (question: string) => void }) => {
+  const [message, setMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
+
+  const handleSend = () => {
+    if (message.trim()) {
+      onAsk(message);
+      setMessage('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="ask-careermate-inline">
+      <div className="ask-careermate-input-wrapper">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Ask CareerMate AI anything about your career..."
+          className="ask-careermate-input"
+        />
+        <div className="ask-careermate-actions">
+          <button
+            className={`ask-careermate-voice ${isListening ? 'listening' : ''}`}
+            onClick={() => setIsListening(!isListening)}
+          >
+            <MaterialIcon name="mic" />
+          </button>
+          <button className="ask-careermate-send" onClick={handleSend}>
+            <MaterialIcon name="send" />
           </button>
         </div>
       </div>
@@ -169,60 +679,118 @@ const InsightCard = ({ type, title, description, actionText }: { type: 'warning'
 
 export default function DashboardPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showZenOverlay, setShowZenOverlay] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'ai', content: any }>>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isMentorshipModalOpen, setIsMentorshipModalOpen] = useState(false);
+  const [selectedMentor, setSelectedMentor] = useState<MentorshipProfile | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    document.documentElement.classList.toggle('dark', newMode);
-    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
-  // Set initial theme
+  const handleAskAI = async (question: string) => {
+    // Add user message to conversation history
+    const newMessage = { role: 'user' as const, content: question };
+    const newHistory = [...conversationHistory, newMessage];
+
+    setConversationHistory(newHistory);
+    setShowZenOverlay(true);
+    setIsLoadingAI(true);
+
+    // Make API call with current history
+    makeAPICall(question, newHistory);
+  };
+
+  const makeAPICall = async (question: string, currentHistory: Array<{ role: 'user' | 'ai', content: any }>) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          message: question,
+          conversationHistory: currentHistory.slice(0, -1).map(msg => ({
+            role: msg.role === 'ai' ? 'assistant' : msg.role,
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+          }))
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to fetch AI response: ${res.status} ${errorData.error || res.statusText}`);
+      }
+
+      const data = await res.json();
+      // Add AI response to conversation history
+      setConversationHistory(prev => [...prev, { role: 'ai' as const, content: data }]);
+    } catch (error: any) {
+      console.error('AI Error:', error);
+      // Add error response to conversation history
+      setConversationHistory(prev => [...prev, {
+        role: 'ai' as const,
+        content: {
+          response_type: 'answer',
+          sections: [{ type: 'paragraph', text: error.message || "Sorry, I encountered an error while processing your request. Please try again." }]
+        }
+      }]);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    const isDark = savedTheme === 'dark';
-    setIsDarkMode(isDark);
-    document.documentElement.classList.toggle('dark', isDark);
-  }, []);
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+      }
+    };
+    checkUser();
+  }, [router, supabase]);
 
   return (
-    <div className="dashboard-container min-h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div className={`dashboard-container ${isDarkMode ? 'dark' : ''}`}>
       <Head>
-        <title>Future Proofer | Career Mode</title>
+        <title>Thinkforge - Career Dashboard</title>
         <meta name="description" content="Your career development dashboard" />
-        <MaterialIconsLink />
       </Head>
 
-      {/* World Map Background */}
-      <div className="fixed inset-0 world-map-bg pointer-events-none"></div>
+      <Sidebar />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 px-6 py-4 glass border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <MaterialIcon name="insights" className="text-white" />
-            </div>
-            <div>
-              <h1 className="font-extrabold text-xl tracking-tight text-primary">FUTURE PROOFER</h1>
-              <p className="text-[10px] font-bold tracking-widest uppercase opacity-60">Career Mode</p>
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Header */}
+        <header className="main-header">
+          <div className="header-search-container">
+            <div className="header-search-bar">
+              <MaterialIcon name="search" className="search-icon" />
+              <input type="text" placeholder="Search roles, mentors, or skills..." />
             </div>
           </div>
-          
-          <nav className="hidden md:flex items-center gap-8 font-semibold text-sm">
-            <a className="text-primary border-b-2 border-primary pb-1" href="#">Discovery</a>
-            <a className="opacity-60 hover:opacity-100 transition-opacity" href="#">Skills Gap</a>
-            <a className="opacity-60 hover:opacity-100 transition-opacity" href="#">Thinkforge</a>
-            <a className="opacity-60 hover:opacity-100 transition-opacity" href="#">Network</a>
-          </nav>
-          
-          <div className="flex items-center gap-4">
-            <button 
+
+          <div className="header-actions">
+            <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="header-icon-btn"
               aria-label="Toggle dark mode"
             >
               {isDarkMode ? (
@@ -231,136 +799,67 @@ export default function DashboardPage() {
                 <MaterialIcon name="dark_mode" />
               )}
             </button>
-            
-            <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-all text-sm font-bold">
-              <MaterialIcon name="business_center" className="text-primary text-base" />
-              Switch to Business Mode
+
+            <button className="header-icon-btn">
+              <MaterialIcon name="notifications" />
+              <span className="notification-badge">3</span>
             </button>
-            
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 overflow-hidden">
-              <Image
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZLC8DAztwC8tscvE479O4SSYSabNx53eBNK7ayKTK1fEFDoKHUAqCakeqNgXrNdFNpAoO2cCbd-zn-jXgtZCTkVOnTfUByyLel3blx1_9V-8BrhZSlbgpHs3ywlj8_SVVBI12SM8H4w6_B_nllUbhUTUb4epty57xmWvZ7sDLcnyHCRuzXuckCb7WNhriIQWUkWOPBDmkWo0081OPSkpXXZDe64ir8BJFb3twBR6JyCf5f5aMqd5wDjmbD-BWXJqs6VnBVocN3FSM"
-                alt="User"
-                width={40}
-                height={40}
-                className="object-cover w-full h-full"
+
+            <button className="header-icon-btn">
+              <MaterialIcon name="help_outline" />
+            </button>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <div className="dashboard-scrollable">
+          <div className="greeting-section">
+            <h1 className="main-greeting">Good morning, Kwame</h1>
+            <p className="main-subtitle">Your journey to becoming a Senior Software Developer is 78% complete.</p>
+          </div>
+
+          <div className="dashboard-grid">
+            {/* Left Column (Main) */}
+            <div className="dashboard-col-left">
+              <ReadinessCard />
+              <CareerMilestones />
+            </div>
+
+            {/* Right Column (Sidebar) */}
+            <div className="dashboard-col-right">
+              <MarketHeatmap />
+              <SuggestedMentors
+                onRequestMentorship={(mentor) => {
+                  setSelectedMentor(mentor);
+                  setIsMentorshipModalOpen(true);
+                }}
               />
+              <AIInsights />
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8 grid grid-cols-12 gap-8">
-        {/* Left Sidebar */}
-        <aside className="col-span-12 lg:col-span-3 space-y-6">
-          <ProfileCard />
-          <DocumentsCard />
-        </aside>
-
-        {/* Main Content */}
-        <div className="col-span-12 lg:col-span-6 space-y-8">
-          {/* Metrics */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MetricCard 
-              title="Skills Growth" 
-              value="Level 4" 
-              icon="school"
-              trend="12%"
-            >
-              <div className="mt-4 h-12 flex items-end gap-1">
-                {[30, 45, 50, 65, 80, 95].map((height, i) => (
-                  <div 
-                    key={i}
-                    className={`flex-1 ${i === 5 ? 'bg-accent' : 'bg-accent/20'} rounded-t-sm`}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-            </MetricCard>
-
-            <MetricCard 
-              title="Match Accuracy" 
-              value="92%" 
-              icon="work_outline"
-            >
-              <div className="mt-4 h-12 flex items-end gap-1">
-                {[60, 70, 65, 75, 85, 90].map((height, i) => (
-                  <div 
-                    key={i}
-                    className={`flex-1 ${i === 5 ? 'bg-primary' : 'bg-primary/20'} rounded-t-sm`}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-            </MetricCard>
-          </section>
-
-          {/* AI Chat */}
-          <AIChat />
-        </div>
-
-        {/* Right Sidebar */}
-        <aside className="col-span-12 lg:col-span-3 space-y-6">
-          <h3 className="font-bold text-sm uppercase tracking-wider opacity-60 px-2 flex items-center gap-2">
-            <MaterialIcon name="psychology" className="text-primary text-lg" />
-            AI Insights
-          </h3>
-          
-          <InsightCard
-            type="warning"
-            title="Skill Gap Detected"
-            description="Foundational knowledge in 'Blockchain Protocol Design' is missing for your dream role at LedgerLink."
-            actionText="View Learning Path"
-          />
-          
-          <InsightCard
-            type="trend"
-            title="Career Trend"
-            description="Remote Product Design roles in the UK are currently seeing a 15% salary premium for Nigerian talent."
-            actionText="Explore Jobs"
-          />
-          
-          <div className="bg-primary p-6 rounded-xl text-white shadow-lg relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-              <MaterialIcon name="trending_up" className="text-8xl" />
-            </div>
-            <h4 className="font-extrabold text-lg leading-tight">Future Earning Potential</h4>
-            <p className="text-xs opacity-80 mt-2">By completing 2 more Thinkforge courses, your market value is projected to increase by $1,200/mo.</p>
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex -space-x-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-primary bg-slate-200 flex items-center justify-center overflow-hidden">
-                    <Image
-                      src={`https://randomuser.me/api/portraits/men/${30 + i}.jpg`}
-                      alt={`User ${i}`}
-                      width={32}
-                      height={32}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                ))}
-                <div className="w-8 h-8 rounded-full border-2 border-primary bg-slate-400 flex items-center justify-center text-[10px] font-bold">
-                  +8
-                </div>
-              </div>
-              <button className="bg-white text-primary px-3 py-1 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-100 transition-colors">
-                Join Network
-              </button>
-            </div>
-          </div>
-        </aside>
+        {/* Fixed AI Input at Bottom */}
+        <AskCareerMateAI onAsk={handleAskAI} />
       </main>
 
-      {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-6 py-8 border-t border-slate-200 dark:border-slate-800 mt-8 opacity-50 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold">
-        <p>© 2026 Future Proofer AI Foresight Platform. All Rights Reserved.</p>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-primary transition-colors">Career Privacy</a>
-          <a href="#" className="hover:text-primary transition-colors">Support</a>
-          <a href="#" className="hover:text-primary transition-colors">For Recruiters</a>
-        </div>
-      </footer>
+      {/* Overlays */}
+      <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
+      <ZenOverlay
+        isOpen={showZenOverlay}
+        onClose={() => {
+          setShowZenOverlay(false);
+          setConversationHistory([]); // Reset conversation when modal closes
+        }}
+        conversationHistory={conversationHistory}
+        isLoading={isLoadingAI}
+        onAskNext={handleAskAI}
+      />
+      <MentorshipRequestModal
+        open={isMentorshipModalOpen}
+        mentor={selectedMentor}
+        onOpenChange={(next) => setIsMentorshipModalOpen(next)}
+      />
     </div>
-  )
+  );
 }

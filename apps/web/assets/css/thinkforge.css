@@ -1,0 +1,346 @@
+:root {
+  --tf-bg: #f6f8fb;
+  --tf-card: #ffffff;
+  --tf-border: #e2e8f0;
+  --tf-text: #0f172a;
+  --tf-muted: #64748b;
+  --tf-primary: #0f52ba;
+  --tf-primary-2: #2563eb;
+  --tf-accent: #0ea5e9;
+  --tf-radius: 16px;
+  --tf-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  font-family: "Inter", "Manrope", system-ui, -apple-system, sans-serif;
+}
+
+.tf-shell {
+  min-height: 100vh;
+  background: var(--tf-bg);
+  color: var(--tf-text);
+}
+
+.tf-layout {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  gap: 24px;
+}
+
+.tf-sidebar {
+  width: 240px;
+  background: var(--tf-card);
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius);
+  box-shadow: var(--tf-shadow);
+  padding: 12px;
+  position: sticky;
+  top: 16px;
+  height: fit-content;
+}
+
+.tf-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.tf-brand-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--tf-primary), var(--tf-primary-2));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.tf-brand-title {
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  color: var(--tf-text);
+}
+
+.tf-nav {
+  margin-top: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.tf-nav-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--tf-muted);
+  font-weight: 600;
+  font-size: 14px;
+  display: block;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tf-nav-item:hover {
+  background: #f1f5f9;
+  color: var(--tf-text);
+}
+
+.tf-nav-item.active {
+  background: #e8f0ff;
+  color: var(--tf-primary);
+  font-weight: 700;
+}
+
+.tf-main {
+  flex: 1;
+  display: grid;
+  gap: 18px;
+}
+
+.tf-card {
+  background: var(--tf-card);
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius);
+  box-shadow: var(--tf-shadow);
+  padding: 22px;
+}
+
+.tf-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.tf-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--tf-muted);
+}
+
+.tf-title {
+  font-size: 28px;
+  font-weight: 900;
+  margin: 4px 0;
+  color: var(--tf-text);
+}
+
+.tf-subtitle {
+  font-size: 14px;
+  color: var(--tf-muted);
+  max-width: 680px;
+}
+
+.tf-btn-primary,
+.tf-btn-secondary,
+.tf-btn-ghost {
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tf-btn-primary {
+  background: linear-gradient(135deg, var(--tf-primary), var(--tf-primary-2));
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+}
+
+.tf-btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.tf-btn-secondary {
+  background: #fff;
+  color: var(--tf-text);
+  border: 1px solid var(--tf-border);
+}
+
+.tf-btn-ghost {
+  background: transparent;
+  color: var(--tf-primary);
+}
+
+.tf-section {
+  margin-top: 8px;
+}
+
+.tf-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tf-section-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--tf-text);
+}
+
+.tf-progress {
+  background: #e5e7eb;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.tf-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tf-primary-2), var(--tf-primary));
+  border-radius: 999px;
+}
+
+.tf-row {
+  display: grid;
+  gap: 12px;
+}
+
+.tf-grid-3 {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.tf-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  color: #fff;
+  background: #10b981;
+}
+
+.tf-badge-outline {
+  border: 1px dashed var(--tf-primary);
+  color: var(--tf-primary);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  background: #fff;
+}
+
+.tf-muted-text {
+  color: var(--tf-muted);
+  font-size: 13px;
+}
+
+.tf-pill {
+  border-radius: 12px;
+  border: 1px solid var(--tf-border);
+  background: #f8fafc;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tf-text);
+}
+
+.tf-hero-card {
+  background: linear-gradient(135deg, #0b1f3a, #14345c);
+  color: #fff;
+  border: none;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+}
+
+.tf-hero-card .tf-subtitle {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.tf-hero-progress {
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tf-hero-progress .tf-progress-fill {
+  background: linear-gradient(90deg, #60a5fa, #38bdf8);
+}
+
+.tf-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tf-list-item {
+  padding: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--tf-border);
+}
+
+.tf-badge-small {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 11px;
+  color: #0f172a;
+  background: #e2f3ff;
+}
+
+.tf-lesson-hero {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--tf-radius);
+  background: linear-gradient(135deg, #0b1f3a, #12325a);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tf-lesson-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.tf-lesson-play button {
+  height: 72px;
+  width: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.tf-certificate-frame {
+  border: 1px solid var(--tf-border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--tf-shadow);
+  overflow: hidden;
+}
+
+.tf-certificate-inner {
+  padding: 60px;
+  text-align: center;
+}
+
+.tf-certificate-bottom {
+  background: #f8fafc;
+  border-top: 1px solid var(--tf-border);
+  padding: 14px;
+  font-size: 12px;
+  color: var(--tf-muted);
+}
+

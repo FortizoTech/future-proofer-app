@@ -1,9 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @import "tailwindcss";
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
 
 @theme {
   --color-fp-blue: #003DA5;
   --color-fp-blue-dark: #002D7A;
   --color-fp-blue-light: #0052CC;
+
+  --color-primary: #0047AB;
+  --color-secondary: #2563EB;
+  --color-background-light: #F8FAFC;
+  --color-background-dark: #0F172A;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --radius-DEFAULT: 1rem;
 
   --animate-shimmer: shimmer 1.5s infinite linear;
   --animate-pulse-light: pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -44,6 +67,32 @@
       transform: scaleX(0.9);
     }
   }
+}
+
+/* Custom Dashboard Classes */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.world-map-bg {
+  background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuARvhqG68TJRrOKy_ke9IXIzTKHHEkHBsU-fLRVoHO0N_coal7DPwyIVbRziD2EdjzaAHIDOanXlFYyH2my4pziQOA78szASFicHAhxsYacKyKC4lEwGDYLorqR2ljnFVG1B_M3DfC8DkRiLXp_EikXGwNo4NnmpUyDXQOoC6ZXzSoMTTgHUVYbMOcic3qAvc91rIAFshG4VOesj6PMhgbTuseqGcvrcI7PCLmKwbWxy5AyBQbnPmJ8gb8DH4lbaX883XcbBmsdTRmF);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.05;
+}
+
+.dark .world-map-bg {
+  filter: invert(1);
+  opacity: 0.03;
 }
 
 @layer base {
