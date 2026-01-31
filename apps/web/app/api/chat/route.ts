@@ -8,16 +8,25 @@ import { validateAIResponse } from '@/lib/response-validator';
 
 export async function POST(req: NextRequest) {
     try {
+        console.log('[Chat API] Starting request processing...');
+
         // 1. AUTHENTICATION - Verify user is logged in
         const supabase = await createClient();
+        console.log('[Chat API] Supabase client created');
+
         const { data: { user }, error: authError } = await supabase.auth.getUser();
+        console.log('[Chat API] Auth check result:', { user: !!user, error: !!authError });
 
         if (authError || !user) {
+            console.log('[Chat API] Authentication failed:', authError);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // 2. RATE LIMITING - Check if user has exceeded limits
+        console.log('[Chat API] Checking rate limit for user:', user.id);
         const rateLimit = await checkRateLimit(user.id, supabase);
+        console.log('[Chat API] Rate limit result:', rateLimit);
+
         if (!rateLimit.allowed) {
             return NextResponse.json(
                 { error: 'Rate limit exceeded. Please try again later.' },
@@ -26,34 +35,74 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. PARSE REQUEST
-        const { message, conversationHistory } = await req.json();
+        console.log('[Chat API] Parsing request body...');
+        const { message, conversationHistory, attachments } = await req.json();
+        console.log('[Chat API] Request parsed:', { messageLength: message?.length, historyLength: conversationHistory?.length, attachmentCount: attachments?.length });
 
-        if (!message || typeof message !== 'string') {
-            return NextResponse.json({ error: 'Invalid message' }, { status: 400 });
+        if ((!message || typeof message !== 'string') && (!attachments || attachments.length === 0)) {
+            const errorMsg = `Invalid request: Received message of type ${typeof message} (${message?.length || 0} chars) and ${attachments?.length || 0} attachments.`;
+            console.log(`[Chat API] ${errorMsg}`);
+            return NextResponse.json({ error: errorMsg }, { status: 400 });
         }
 
         // 4. GET USER PROFILE - Know their mode, location, etc.
-        const { data: profile } = await supabase
+        console.log('[Chat API] Fetching user profile...');
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
 
+        console.log('[Chat API] Profile fetch result:', { profile: !!profile, error: !!profileError });
+
         if (!profile) {
-            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+            console.log('[Chat API] Profile not found, creating basic response...');
+            // Instead of failing, provide a basic response
+            return NextResponse.json({
+                response_type: 'answer',
+                sections: [
+                    {
+                        type: 'paragraph',
+                        text: 'Welcome! I notice your profile isn\'t fully set up yet. To provide personalized career advice, please complete your profile first.'
+                    }
+                ],
+                next_questions: {
+                    type: 'next_questions',
+                    items: [
+                        { text: 'How do I complete my profile?' },
+                        { text: 'What information do you need?' },
+                        { text: 'Can you help me get started?' }
+                    ]
+                }
+            });
         }
 
         // 5. CONTEXT DETECTION
+        console.log('[Chat API] Detecting context...');
         const context = detectContext(message, profile);
-        console.log('Detected context:', context);
+        console.log('[Chat API] Detected context:', context);
 
-        // 6. DATA RETRIEVAL
-        const retrievedData = await retrieveContextData(context, supabase);
-        console.log('Retrieved data points:', {
-            insights: retrievedData.marketInsights.length,
-            salaries: retrievedData.salaryData.length,
-            skills: retrievedData.skillsDemand.length,
-        });
+        // 6. DATA RETRIEVAL - Make this more resilient
+        console.log('[Chat API] Retrieving context data...');
+        let retrievedData;
+        try {
+            retrievedData = await retrieveContextData(context, supabase);
+            console.log('[Chat API] Retrieved data points:', {
+                insights: retrievedData.marketInsights.length,
+                salaries: retrievedData.salaryData.length,
+                skills: retrievedData.skillsDemand.length,
+            });
+        } catch (dataError) {
+            console.log('[Chat API] Data retrieval failed, using empty data:', dataError);
+            // Fallback to empty data if database tables don't exist
+            retrievedData = {
+                marketInsights: [],
+                salaryData: [],
+                skillsDemand: [],
+                businessEnvironment: [],
+                sources: []
+            };
+        }
 
         // 7. PROMPT CONSTRUCTION
         const { systemPrompt, userMessage } = buildPrompt(
@@ -61,7 +110,8 @@ export async function POST(req: NextRequest) {
             retrievedData,
             profile.mode as 'CAREER' | 'BUSINESS',
             context,
-            profile
+            profile,
+            attachments
         );
 
         // 8. CALL OPENAI API
@@ -78,7 +128,7 @@ export async function POST(req: NextRequest) {
             messages: [
                 { role: 'system', content: systemPrompt },
                 ...(conversationHistory || []).map((msg: any) => ({
-                    role: msg.role,
+                    role: msg.role === 'ai' ? 'assistant' : msg.role,
                     content: msg.content
                 })),
                 { role: 'user', content: userMessage },

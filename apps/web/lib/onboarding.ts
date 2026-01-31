@@ -46,7 +46,8 @@ export interface OnboardingData {
     // Step 4: Identity
     fullName: string;
     email: string;
-    password: string;
+    country?: string;
+    password?: string;
 }
 
 export interface UploadResult {
@@ -270,6 +271,7 @@ export async function saveProfile(
             id: userId,
             email: data.email,
             full_name: data.fullName,
+            country: data.country || null,
             mode: data.mode.toUpperCase(),
             onboarding_completed: true,
             updated_at: new Date().toISOString()
@@ -333,9 +335,9 @@ export async function saveProfile(
 
 /**
  * Orchestrates the complete onboarding submission:
- * 1. Sign up the user with email/password (no email verification)
- * 2. Save profile data immediately
- * 3. Upload CV if provided (Career mode only)
+ * 1. Verifies the user is authenticated
+ * 2. Saves profile data
+ * 3. Uploads CV if provided (Career mode only)
  *
  * @param data - The complete onboarding data
  * @returns Object with success status, message, and redirect URL
@@ -346,50 +348,62 @@ export async function completeOnboarding(data: OnboardingData): Promise<{
     redirectUrl?: string;
 }> {
     try {
-        // Step 1: Sign up the user with email/password (no email verification)
-        const signUpResult = await signUpUser(data.email, data.fullName, data.password);
+        const supabase = createClient();
 
-        if (!signUpResult.success) {
+        // Step 1: Check for authenticated session
+        let userId = '';
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            userId = user.id;
+        } else {
+            // No session - try to sign up if password is provided
+            if (data.password) {
+                const signUpResult = await signUpUser(data.email, data.fullName, data.password);
+
+                if (!signUpResult.success || !signUpResult.userId) {
+                    return {
+                        success: false,
+                        message: signUpResult.error || 'Failed to create account'
+                    };
+                }
+
+                userId = signUpResult.userId;
+
+                // If we have a session from signup (which we should for auto-confirm), good. 
+                // If not, we might need to tell them to check email, but let's assume auto-confirm for now as per previous logic.
+            } else {
+                return {
+                    success: false,
+                    message: 'You must be logged in or provide a password to create an account.',
+                    redirectUrl: '/login'
+                };
+            }
+        }
+
+        // Step 2: Save profile data using the user ID (either existing or new)
+        const profileResult = await saveProfile(userId, data);
+
+        if (!profileResult.success) {
             return {
                 success: false,
-                message: signUpResult.error || 'Failed to create account'
+                message: profileResult.error || 'Failed to save profile. Please try again.'
             };
         }
 
-        // Step 2: Check if session was established
-        if (!signUpResult.session) {
-            console.warn('User created but no session established. Email confirmation likely required.');
-            return {
-                success: true,
-                message: 'Account created! Please check your email to confirm your account.',
-                redirectUrl: '/login?message=check_email'
-            };
-        }
-
-        // Step 3: Save profile data immediately (user is now logged in)
-        if (signUpResult.userId) {
-            const profileResult = await saveProfile(signUpResult.userId, data);
-
-            if (!profileResult.success) {
-                console.error('Profile save failed:', profileResult.error);
-                // Still redirect to dashboard, it will handle the error via finalizePendingOnboarding
-            }
-
-            // Step 4: Upload CV if provided (Career mode)
-            if (data.mode === 'CAREER' && data.cvFile) {
-                const uploadResult = await uploadCV(data.cvFile, signUpResult.userId);
-                if (uploadResult.success && uploadResult.url) {
-                    // Update profile with CV URL
-                    const supabase = createClient();
-                    await supabase.from('profiles').update({ cv_url: uploadResult.url }).eq('id', signUpResult.userId);
-                }
+        // Step 3: Upload CV if provided (Career mode)
+        if (data.mode === 'CAREER' && data.cvFile) {
+            const uploadResult = await uploadCV(data.cvFile, userId);
+            if (uploadResult.success && uploadResult.url) {
+                // Update profile with CV URL
+                await supabase.from('profiles').update({ cv_url: uploadResult.url }).eq('id', userId);
             }
         }
 
-        // User is signed up and logged in - redirect to dashboard
+        // Success - redirect to dashboard
         return {
             success: true,
-            message: 'Account created successfully! Redirecting to your dashboard...',
+            message: 'Profile completed successfully! Redirecting to your dashboard...',
             redirectUrl: '/dashboard'
         };
     } catch (err) {

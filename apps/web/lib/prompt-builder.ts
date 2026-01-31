@@ -2,30 +2,43 @@ import { DetectedContext } from './context-detector';
 import { RetrievedData } from './data-retriever';
 
 interface PromptComponents {
-    systemPrompt: string;
-    contextData: string;
-    userMessage: string;
+  systemPrompt: string;
+  contextData: string;
+  userMessage: string;
 }
 
 export function buildPrompt(
-    userMessage: string,
-    retrievedData: RetrievedData,
-    userMode: 'CAREER' | 'BUSINESS',
-    context: DetectedContext,
-    profile: any
+  userMessage: string,
+  retrievedData: RetrievedData,
+  userMode: 'CAREER' | 'BUSINESS',
+  context: DetectedContext,
+  profile: any,
+  attachments?: { name: string; url: string; type: string }[]
 ): PromptComponents {
-    // 1. System Prompt
-    const systemPrompt = userMode === 'CAREER'
-        ? getCareerGuideSystemPrompt(profile)
-        : getBusinessMateSystemPrompt(profile);
+  // 1. System Prompt
+  const systemPrompt = userMode === 'CAREER'
+    ? getCareerGuideSystemPrompt(profile)
+    : getBusinessMateSystemPrompt(profile);
 
-    // 2. Context Data - Convert retrieved data to readable text
-    const contextData = formatContextData(retrievedData, context);
+  // 2. Context Data
+  const contextData = formatContextData(retrievedData, context);
 
-    // 3. Combine into final prompt instructions (appended to system prompt or sent as separate context)
-    // We'll return the components so the API route can structure the messages.
+  // 3. Format Attachments as side-channel context for the AI
+  let attachmentContext = "";
+  if (attachments && attachments.length > 0) {
+    attachmentContext = "\n\n=== USER ATTACHMENTS ===\n";
+    attachments.forEach(att => {
+      attachmentContext += `- File: ${att.name}\n  Type: ${att.type}\n  Reference URL: ${att.url}\n`;
+    });
+    attachmentContext += "You have read access to these files. Reference their content or metadata if relevant to the user's question.\n";
+  }
 
-    const fullSystemPrompt = `${systemPrompt}
+  const fullUserMessage = attachmentContext ? `${attachmentContext}\nUser Message: ${userMessage}` : userMessage;
+
+  // 3. Combine into final prompt instructions (appended to system prompt or sent as separate context)
+  // We'll return the components so the API route can structure the messages.
+
+  const fullSystemPrompt = `${systemPrompt}
 
 === VERIFIED AFRICAN DATA ===
 ${contextData}
@@ -116,72 +129,72 @@ ALL RESPONSES MUST BE PURE JSON FOLLOWING THIS STRUCTURE:
 - All questions must maintain a first-person user perspective.
 `;
 
-    return {
-        systemPrompt: fullSystemPrompt,
-        contextData,
-        userMessage
-    };
+  return {
+    systemPrompt: fullSystemPrompt,
+    contextData,
+    userMessage: fullUserMessage
+  };
 }
 
 function formatContextData(data: RetrievedData, context: DetectedContext): string {
-    let formatted = '';
+  let formatted = '';
 
-    // Market Insights
-    if (data.marketInsights.length > 0) {
-        formatted += '\nMarket Intelligence:\n';
-        data.marketInsights.forEach(insight => {
-            formatted += `- ${insight.title}: ${insight.description}\n`;
-            if (insight.metric_value) {
-                formatted += `  Key Metric: ${insight.metric_value}${insight.metric_unit}\n`;
-            }
-            formatted += `  Source: ${insight.source?.organization_name} (${insight.year})\n`;
-        });
-    }
+  // Market Insights
+  if (data.marketInsights.length > 0) {
+    formatted += '\nMarket Intelligence:\n';
+    data.marketInsights.forEach(insight => {
+      formatted += `- ${insight.title}: ${insight.description}\n`;
+      if (insight.metric_value) {
+        formatted += `  Key Metric: ${insight.metric_value}${insight.metric_unit}\n`;
+      }
+      formatted += `  Source: ${insight.source?.organization_name} (${insight.year})\n`;
+    });
+  }
 
-    // Salary Data
-    if (data.salaryData.length > 0) {
-        formatted += '\nSalary Benchmarks:\n';
-        data.salaryData.forEach(salary => {
-            formatted += `- ${salary.role?.title} in ${salary.country?.name}: Range ${salary.currency_code} ${salary.min_salary}-${salary.max_salary} ${salary.period} (${salary.experience_years_min}-${salary.experience_years_max} years experience). Source: ${salary.source?.organization_name} (${salary.year})\n`;
-        });
-    }
+  // Salary Data
+  if (data.salaryData.length > 0) {
+    formatted += '\nSalary Benchmarks:\n';
+    data.salaryData.forEach(salary => {
+      formatted += `- ${salary.role?.title} in ${salary.country?.name}: Range ${salary.currency_code} ${salary.min_salary}-${salary.max_salary} ${salary.period} (${salary.experience_years_min}-${salary.experience_years_max} years experience). Source: ${salary.source?.organization_name} (${salary.year})\n`;
+    });
+  }
 
-    // Skills Demand
-    if (data.skillsDemand.length > 0) {
-        formatted += '\nHigh-Demand Skills:\n';
-        data.skillsDemand.forEach(skill => {
-            formatted += `- ${skill.skill_name}: Demand Level ${skill.demand_level}, Trend ${skill.demand_trend}, Job Postings ${skill.job_postings_mentioning}\n`;
-            if (skill.salary_premium_percent) {
-                formatted += `  Salary Premium: +${skill.salary_premium_percent}%\n`;
-            }
-        });
-    }
+  // Skills Demand
+  if (data.skillsDemand.length > 0) {
+    formatted += '\nHigh-Demand Skills:\n';
+    data.skillsDemand.forEach(skill => {
+      formatted += `- ${skill.skill_name}: Demand Level ${skill.demand_level}, Trend ${skill.demand_trend}, Job Postings ${skill.job_postings_mentioning}\n`;
+      if (skill.salary_premium_percent) {
+        formatted += `  Salary Premium: +${skill.salary_premium_percent}%\n`;
+      }
+    });
+  }
 
-    // Business Environment
-    if (data.businessEnvironment.length > 0) {
-        formatted += '\nBusiness Environment:\n';
-        data.businessEnvironment.forEach(env => {
-            formatted += `- ${env.title}: ${env.description}\n`;
-            if (env.metric_value) {
-                formatted += `  Metric: ${env.metric_value}${env.metric_unit}\n`;
-            }
-        });
-    }
+  // Business Environment
+  if (data.businessEnvironment.length > 0) {
+    formatted += '\nBusiness Environment:\n';
+    data.businessEnvironment.forEach(env => {
+      formatted += `- ${env.title}: ${env.description}\n`;
+      if (env.metric_value) {
+        formatted += `  Metric: ${env.metric_value}${env.metric_unit}\n`;
+      }
+    });
+  }
 
-    if (!formatted) {
-        formatted = "No specific data found for this context. Use general knowledge but be cautious about specific claims.";
-    }
+  if (!formatted) {
+    formatted = "No specific data found for this context. Use general knowledge but be cautious about specific claims.";
+  }
 
-    return formatted;
+  return formatted;
 }
 
 export function getCareerGuideSystemPrompt(profile: any): string {
-    const userName = profile.full_name || 'User';
-    const skills = profile.skills?.length > 0 ? profile.skills.join(', ') : 'Not specified';
-    const careerGoal = profile.career_goal || 'Not specified';
-    const cvContext = profile.cv_text ? 'CV data is available and has been analyzed.' : 'No CV data provided.';
+  const userName = profile.full_name || 'User';
+  const skills = profile.skills?.length > 0 ? profile.skills.join(', ') : 'Not specified';
+  const careerGoal = profile.career_goal || 'Not specified';
+  const cvContext = profile.cv_text ? 'CV data is available and has been analyzed.' : 'No CV data provided.';
 
-    return `# IDENTITY
+  return `# IDENTITY
 You are CareerGuide AI, an expert career development advisor specializing in African labor markets, particularly West Africa (Ghana, Gambia, Nigeria, and ECOWAS nations).
 
 # USER PROFILE
@@ -279,13 +292,13 @@ You have deep knowledge of:
 }
 
 export function getBusinessMateSystemPrompt(profile: any): string {
-    const userName = profile.full_name || 'User';
-    const businessStage = profile.business_stage || 'Not specified';
-    const businessSector = profile.business_sector || 'Not specified';
-    const teamSize = profile.team_size || 'Not specified';
-    const revenueStage = profile.revenue_stage || 'Not specified';
+  const userName = profile.full_name || 'User';
+  const businessStage = profile.business_stage || 'Not specified';
+  const businessSector = profile.business_sector || 'Not specified';
+  const teamSize = profile.team_size || 'Not specified';
+  const revenueStage = profile.revenue_stage || 'Not specified';
 
-    return `# IDENTITY
+  return `# IDENTITY
 You are BusinessMate AI, a specialized business intelligence advisor for African small and medium enterprises (SMEs), with deep expertise in West African markets (Ghana, Gambia, Nigeria, and ECOWAS nations).
 
 # USER PROFILE

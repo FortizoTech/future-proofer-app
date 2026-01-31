@@ -85,6 +85,10 @@ export default function Navbar() {
 
                 {/* Primary CTA */}
                 <div className="navbar-cta-container">
+                    <Link href="/login" className="navbar-link-item group" style={{ marginRight: '1rem' }}>
+                        Login
+                        <span className="navbar-link-underline" />
+                    </Link>
                     <Link href="/onboarding">
                         <button className="navbar-launch-btn">
                             Launch App

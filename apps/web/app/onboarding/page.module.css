@@ -1,0 +1,30 @@
+.bgMap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.15;
+}
+
+.blobTop {
+    position: absolute;
+    top: 10%;
+    left: 5%;
+    width: 24rem;
+    height: 24rem;
+    background: rgba(147, 197, 253, 0.15);
+    border-radius: 50%;
+    filter: blur(100px);
+}
+
+.blobBottom {
+    position: absolute;
+    bottom: 10%;
+    right: 5%;
+    width: 24rem;
+    height: 24rem;
+    background: rgba(165, 180, 252, 0.15);
+    border-radius: 50%;
+    filter: blur(100px);
+}

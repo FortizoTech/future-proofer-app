@@ -38,9 +38,7 @@ const Preloader = ({ children }: { children: React.ReactNode }) => {
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: [0.8, 1.0, 0.8], opacity: 1 }}
                             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            className="relative w-40 h-40 rounded-full flex items-center justify-center
-                         bg-white/[0.05] backdrop-blur-lg border border-white/[0.1]
-                         shadow-lg overflow-hidden z-10"
+                            className="relative w-40 h-40 rounded-full flex items-center justify-center bg-white/[0.05] backdrop-blur-lg border border-white/[0.1] shadow-lg overflow-hidden z-10"
                         >
                             <img
                                 src="/logo/logo-f.svg"
