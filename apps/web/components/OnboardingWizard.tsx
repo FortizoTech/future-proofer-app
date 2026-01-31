@@ -141,38 +141,25 @@ function OnboardingContent() {
     const searchParams = useSearchParams();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [hasMounted, setHasMounted] = useState(false);
     const [direction, setDirection] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    // Initialize step from localStorage
-    const [step, setStep] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const savedStep = localStorage.getItem('onboarding_step');
-            return savedStep ? parseInt(savedStep) : 1;
-        }
-        return 1;
-    });
+    // Initialize step as default
+    const [step, setStep] = useState(1);
 
-    // Initialize data from localStorage
-    const [data, setData] = useState<OnboardingData>(() => {
-        if (typeof window !== 'undefined') {
-            const savedData = localStorage.getItem('onboarding_data');
-            if (savedData) {
-                return JSON.parse(savedData);
-            }
-        }
-        return {
-            mode: '',
-            skills: [],
-            fullName: '',
-            email: '',
-            country: '',
-            password: '',
-            cvFile: null,
-        };
+    // Initialize data as default
+    const [data, setData] = useState<OnboardingData>({
+        mode: '',
+        skills: [],
+        fullName: '',
+        email: '',
+        country: '',
+        password: '',
+        cvFile: null,
     });
 
     // Handle mode selection from landing page
@@ -187,15 +174,38 @@ function OnboardingContent() {
         }
     }, [searchParams]);
 
-    // Save data to localStorage whenever it changes
+    // Load data from localStorage on mount
     useEffect(() => {
-        localStorage.setItem('onboarding_data', JSON.stringify(data));
-    }, [data]);
+        const savedData = localStorage.getItem('onboarding_data');
+        if (savedData) {
+            try {
+                setData(JSON.parse(savedData));
+            } catch (e) {
+                console.error('Failed to parse saved onboarding data', e);
+            }
+        }
 
-    // Save step to localStorage whenever it changes
+        const savedStep = localStorage.getItem('onboarding_step');
+        if (savedStep) {
+            setStep(parseInt(savedStep));
+        }
+
+        setHasMounted(true);
+    }, []);
+
+    // Save data to localStorage whenever it changes (only after mounting)
     useEffect(() => {
-        localStorage.setItem('onboarding_step', step.toString());
-    }, [step]);
+        if (hasMounted) {
+            localStorage.setItem('onboarding_data', JSON.stringify(data));
+        }
+    }, [data, hasMounted]);
+
+    // Save step to localStorage whenever it changes (only after mounting)
+    useEffect(() => {
+        if (hasMounted) {
+            localStorage.setItem('onboarding_step', step.toString());
+        }
+    }, [step, hasMounted]);
 
     // Auto-fill user data (Email/Name) and detect country
     useEffect(() => {
