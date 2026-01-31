@@ -8,7 +8,7 @@ import Head from 'next/head';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import '@/assets/css/dashboard.css';
 import { MentorshipRequestModal, type MentorshipProfile } from '@/components/mentorship/MentorshipRequestModal';
-import { Mic, Paperclip, Send, Settings, User, LogOut, FileText, CheckCircle, Play, HelpCircle, Bot, TrendingUp, Sparkles, MessageCircle, X, Loader2, StopCircle, Trash2 } from 'lucide-react';
+import { Mic, Paperclip, Send, Settings, User, LogOut, FileText, CheckCircle, Play, HelpCircle, Bot, TrendingUp, Sparkles, MessageCircle, X, Loader2, StopCircle, Trash2, Rocket, ChevronRight } from 'lucide-react';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import '@/assets/css/chat-features.css';
@@ -414,6 +414,47 @@ export default function DashboardPage() {
       handleSendMessage();
     }
   };
+
+  if (profile?.mode === 'BUSINESS') {
+    return (
+      <div className="dashboard-container">
+        <Head>
+          <title>Thnkforge - BusinessMate Coming Soon</title>
+        </Head>
+        <div className="glass-layout flex items-center justify-center p-8">
+          <div className="glass-panel p-12 text-center max-w-2xl border border-blue-500/20 shadow-2xl shadow-blue-500/10">
+            <div className="w-20 h-20 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-8 animate-pulse border border-blue-500/30">
+              <Rocket size={40} className="text-blue-400" />
+            </div>
+            <h1 className="text-4xl font-bold text-white mb-6 tracking-tight">BusinessMate AI</h1>
+            <div className="inline-flex items-center gap-2 px-4 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-semibold mb-8 border border-blue-500/30">
+              <Sparkles size={14} />
+              PREMIUM UPCOMING FEATURE
+            </div>
+            <p className="text-xl text-gray-300 mb-10 leading-relaxed">
+              We're building a state-of-the-art AI Business Strategist for entrepreneurs in West Africa.
+              Soon, you'll be able to validate ideas, automate operations, and scale your venture with the power of Thnkforge AI.
+            </p>
+            <div className="flex flex-col gap-4 max-w-sm mx-auto">
+              <button
+                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 group"
+                onClick={() => window.location.href = 'mailto:support@thnkforge.com?subject=BusinessMate Early Access'}
+              >
+                Join the Waitlist
+                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-semibold transition-all border border-white/10"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">

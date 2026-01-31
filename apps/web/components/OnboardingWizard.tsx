@@ -229,10 +229,11 @@ function OnboardingContent() {
                 }
 
                 setIsAuthenticated(true);
+                const metadata = user.user_metadata;
                 setData(prev => ({
                     ...prev,
                     email: user.email || prev.email,
-                    fullName: user.user_metadata?.full_name || prev.fullName
+                    fullName: metadata?.full_name || metadata?.name || prev.fullName
                 }));
             }
         };
@@ -373,6 +374,9 @@ function OnboardingContent() {
     // ============================================
     // RENDER
     // ============================================
+
+    // Prevent hydration mismatch by not rendering content until mounted
+    if (!hasMounted) return null;
 
     return (
         <div className="onboarding-page">
