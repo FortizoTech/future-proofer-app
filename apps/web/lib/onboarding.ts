@@ -47,7 +47,6 @@ export interface OnboardingData {
     fullName: string;
     email: string;
     country?: string;
-    password?: string;
 }
 
 export interface UploadResult {
@@ -364,28 +363,11 @@ export async function completeOnboarding(data: OnboardingData): Promise<{
         if (user) {
             userId = user.id;
         } else {
-            // No session - try to sign up if password is provided
-            if (data.password) {
-                const signUpResult = await signUpUser(data.email, data.fullName, data.password);
-
-                if (!signUpResult.success || !signUpResult.userId) {
-                    return {
-                        success: false,
-                        message: signUpResult.error || 'Failed to create account'
-                    };
-                }
-
-                userId = signUpResult.userId;
-
-                // If we have a session from signup (which we should for auto-confirm), good. 
-                // If not, we might need to tell them to check email, but let's assume auto-confirm for now as per previous logic.
-            } else {
-                return {
-                    success: false,
-                    message: 'You must be logged in or provide a password to create an account.',
-                    redirectUrl: '/login'
-                };
-            }
+            return {
+                success: false,
+                message: 'You must be logged in to complete onboarding.',
+                redirectUrl: '/login'
+            };
         }
 
         // Step 2: Save profile data using the user ID (either existing or new)

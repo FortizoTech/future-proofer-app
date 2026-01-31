@@ -158,8 +158,6 @@ function OnboardingContent() {
         fullName: '',
         email: '',
         country: '',
-        password: '',
-        cvFile: null,
     });
 
     // Handle mode selection from landing page
@@ -289,12 +287,8 @@ function OnboardingContent() {
                 }
                 return false;
             case 4:
-                // If authenticated, just need name and country. If not, need email and password too.
-                const basicInfo = !!data.fullName && !!data.country;
-                if (isAuthenticated) {
-                    return basicInfo;
-                }
-                return basicInfo && !!data.email && data.email.includes('@') && !!data.password && data.password.length >= 6;
+                // Only need name and country now. Email/Password are handled in login/signup pages.
+                return !!data.fullName && !!data.country;
             default:
                 return false;
         }
@@ -783,63 +777,11 @@ function OnboardingContent() {
                                             </div>
                                         </div>
 
-                                        {/* Email Input */}
-                                        <div style={{ marginBottom: '1.5rem' }}>
-                                            <label className="onboarding-label">Email Address</label>
-                                            <div className="onboarding-input-wrapper">
-                                                <Mail className="onboarding-input-icon" />
-                                                <input
-                                                    type="email"
-                                                    disabled={isAuthenticated}
-                                                    placeholder="you@example.com"
-                                                    className="onboarding-input onboarding-input--with-icon"
-                                                    value={data.email}
-                                                    onChange={(e) => setData({ ...data, email: e.target.value })}
-                                                    style={isAuthenticated ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Password Input (Only for Guest Users) */}
-                                        {!isAuthenticated && (
-                                            <div style={{ marginBottom: '1.5rem' }}>
-                                                <label className="onboarding-label">Create Password</label>
-                                                <div className="onboarding-input-wrapper">
-                                                    <div className="onboarding-input-icon">
-                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                                        </svg>
-                                                    </div>
-                                                    <input
-                                                        type="password"
-                                                        placeholder="Create a password (min 6 chars)"
-                                                        className="onboarding-input onboarding-input--with-icon"
-                                                        value={data.password || ''}
-                                                        onChange={(e) => setData({ ...data, password: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {!isAuthenticated && (
-                                            <div style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.9rem', color: '#64748b' }}>
-                                                Already have an account? <a href="/login" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>Login here</a>
-                                            </div>
-                                        )}
-
-
                                         {/* Error Message */}
                                         {error && (
                                             <div className="onboarding-error">
                                                 <AlertCircle />
-                                                <span>
-                                                    {error.includes('already registered') || error.includes('log in') ? (
-                                                        <>
-                                                            {error} <a href="/login" style={{ color: 'inherit', fontWeight: 600, textDecoration: 'underline' }}>Login here</a>
-                                                        </>
-                                                    ) : error}
-                                                </span>
+                                                <span>{error}</span>
                                             </div>
                                         )}
 
