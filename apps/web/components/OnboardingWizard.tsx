@@ -833,7 +833,13 @@ function OnboardingContent() {
                                         {error && (
                                             <div className="onboarding-error">
                                                 <AlertCircle />
-                                                <span>{error}</span>
+                                                <span>
+                                                    {error.includes('already registered') || error.includes('log in') ? (
+                                                        <>
+                                                            {error} <a href="/login" style={{ color: 'inherit', fontWeight: 600, textDecoration: 'underline' }}>Login here</a>
+                                                        </>
+                                                    ) : error}
+                                                </span>
                                             </div>
                                         )}
 

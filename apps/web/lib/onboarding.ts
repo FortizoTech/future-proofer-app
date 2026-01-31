@@ -221,6 +221,13 @@ export async function signUpUser(
 
         if (error) {
             console.error('Sign Up Error:', error);
+            // Handle existing user error
+            if (error.message?.includes('already registered')) {
+                return {
+                    success: false,
+                    error: 'This email is already registered. Please log in instead.'
+                };
+            }
             return {
                 success: false,
                 error: error.message || 'Failed to create account'
