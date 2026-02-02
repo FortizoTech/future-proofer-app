@@ -7,21 +7,39 @@ interface WelcomeModalProps {
     isOpen: boolean;
     onClose: () => void;
     userName: string;
-    goal: string;
+    goal: any;
     country: string;
+    skills?: string[];
+    aiInsight?: string;
+    isDarkMode?: boolean;
 }
 
-export const WelcomeModal = ({ isOpen, onClose, userName, goal, country }: WelcomeModalProps) => {
+export const WelcomeModal = ({
+    isOpen,
+    onClose,
+    userName,
+    goal,
+    country,
+    skills = [],
+    aiInsight,
+    isDarkMode = false
+}: WelcomeModalProps) => {
     if (!isOpen) return null;
 
-    const getGoalText = (goal: string) => {
-        switch (goal) {
-            case 'FIND_JOB': return 'Find your next career opportunity';
-            case 'UPSKILL': return 'Enhance your professional skill set';
-            case 'CAREER_SWITCH': return 'Transition into a new career path';
-            default: return 'Grow your professional career';
-        }
+    const getGoalText = (goalVal: any) => {
+        const g = goalVal || '';
+        if (!g) return 'Grow your professional career';
+        if (g === 'FIND_JOB') return 'Find your next career opportunity';
+        if (g === 'UPSKILL') return 'Enhance your professional skill set';
+        if (g === 'CAREER_SWITCH') return 'Transition into a new career path';
+
+        // Handle custom goals: clean up and truncate if needed
+        const cleanGoal = (g.split(':')[0] || '').trim();
+        return cleanGoal.length > 35 ? cleanGoal.substring(0, 32) + '...' : cleanGoal;
     };
+
+    // Default insight if AI hasn't loaded one yet
+    const displayInsight = aiInsight || `Based on your profile, I'm identifying high-growth opportunities in ${country || 'the region'} that match your skills. Let's explore your tailored career roadmap.`;
 
     return (
         <AnimatePresence>
@@ -32,80 +50,113 @@ export const WelcomeModal = ({ isOpen, onClose, userName, goal, country }: Welco
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                        className={`absolute inset-0 ${isDarkMode ? 'bg-slate-950/80 shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]' : 'bg-slate-500/20'} backdrop-blur-md`}
                     />
 
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        initial={{ scale: 0.95, opacity: 0, y: 30 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-lg bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+                        exit={{ scale: 0.95, opacity: 0, y: 30 }}
+                        className={`relative w-full max-w-lg ${isDarkMode
+                                ? 'bg-slate-900/60 border-white/10 text-white'
+                                : 'bg-white/80 border-slate-200 text-slate-900'
+                            } backdrop-blur-2xl border rounded-[3rem] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] overflow-hidden`}
                     >
-                        {/* Background Glows */}
-                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl" />
-                        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl" />
+                        {/* Background Decorative Glows */}
+                        <div className={`absolute -top-24 -right-24 w-64 h-64 ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-400/10'} rounded-full blur-[80px] pointer-events-none`} />
+                        <div className={`absolute -bottom-24 -left-24 w-64 h-64 ${isDarkMode ? 'bg-purple-600/20' : 'bg-purple-400/10'} rounded-full blur-[80px] pointer-events-none`} />
 
                         {/* Close Button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 text-slate-400 hover:text-white transition-colors"
+                            className={`absolute top-8 right-8 p-2 rounded-full transition-all ${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
+                                }`}
                         >
                             <X size={20} />
                         </button>
 
                         <div className="relative flex flex-col items-center text-center">
-                            {/* Bot Icon */}
-                            <div className="w-20 h-20 bg-blue-500 rounded-3xl flex items-center justify-center text-white mb-6 shadow-xl shadow-blue-500/20">
-                                <Bot size={40} />
+                            {/* Bot Icon with Pulse effect */}
+                            <div className="relative mb-8">
+                                <motion.div
+                                    animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
+                                    transition={{ duration: 4, repeat: Infinity }}
+                                    className="absolute -inset-4 bg-blue-500 rounded-[2.5rem] blur-xl"
+                                />
+                                <div className="relative w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-[2.2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30">
+                                    <Bot size={48} strokeWidth={1.5} />
+                                </div>
                             </div>
 
-                            <h2 className="text-3xl font-bold text-white mb-2">
+                            <h2 className={`text-4xl font-extrabold mb-3 tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                                 Welcome, {userName || 'Explorer'}!
                             </h2>
-                            <p className="text-blue-400 font-medium mb-8">
-                                Your AI Career Guide is ready.
+                            <p className="text-blue-500 font-semibold mb-10 text-lg uppercase tracking-widest text-sm">
+                                AI Foresight is Ready
                             </p>
 
-                            {/* Data Cards */}
-                            <div className="grid grid-cols-2 gap-4 w-full mb-8">
-                                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-left">
-                                    <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-2 font-semibold">
-                                        <Target size={14} className="text-blue-400" />
+                            {/* Refined Data Cards */}
+                            <div className="grid grid-cols-2 gap-5 w-full mb-10">
+                                <div className={`group rounded-[2rem] p-6 text-left transition-all border ${isDarkMode
+                                        ? 'bg-white/5 border-white/5 hover:border-white/10'
+                                        : 'bg-slate-50 border-slate-100 hover:border-slate-200 shadow-sm'
+                                    }`}>
+                                    <div className="flex items-center gap-2 text-blue-500 text-[10px] uppercase tracking-[0.2em] mb-3 font-bold">
+                                        <Target size={14} />
                                         Target Goal
                                     </div>
-                                    <div className="text-white text-sm font-medium">
+                                    <div className={`text-sm font-bold leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                                         {getGoalText(goal)}
                                     </div>
                                 </div>
-                                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-left">
-                                    <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-2 font-semibold">
-                                        <MapPin size={14} className="text-purple-400" />
+                                <div className={`group rounded-[2rem] p-6 text-left transition-all border ${isDarkMode
+                                        ? 'bg-white/5 border-white/5 hover:border-white/10'
+                                        : 'bg-slate-50 border-slate-100 hover:border-slate-200 shadow-sm'
+                                    }`}>
+                                    <div className="flex items-center gap-2 text-purple-500 text-[10px] uppercase tracking-[0.2em] mb-3 font-bold">
+                                        <MapPin size={14} />
                                         Location
                                     </div>
-                                    <div className="text-white text-sm font-medium">
+                                    <div className={`text-sm font-bold leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                                         {country || 'Global'}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Insight Box */}
-                            <div className="w-full bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 mb-8 text-left relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-3">
-                                    <Sparkles size={16} className="text-blue-400 opacity-50" />
+                            {/* Elevated Insight Box */}
+                            <div className={`w-full rounded-[2rem] p-8 mb-10 text-left relative overflow-hidden min-h-[120px] flex flex-col justify-center border transition-all ${isDarkMode
+                                    ? 'bg-blue-500/5 border-blue-500/20'
+                                    : 'bg-blue-50/50 border-blue-100 shadow-[0_8px_32px_rgba(59,130,246,0.1)]'
+                                }`}>
+                                <div className="absolute top-0 right-0 p-4">
+                                    <Sparkles size={20} className={`text-blue-500 ${!aiInsight ? 'animate-pulse' : 'opacity-30'}`} />
                                 </div>
-                                <h4 className="text-blue-400 text-sm font-bold mb-2 flex items-center gap-2">
-                                    Initial AI Insight
+                                <h4 className="text-blue-500 text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                    AI Perspective
                                 </h4>
-                                <p className="text-slate-300 text-sm leading-relaxed">
-                                    Based on your interest in <strong>{goal === 'UPSKILL' ? 'upskilling' : 'career growth'}</strong>, I&apos;ve analyzed the tech ecosystem in <strong>{country || 'your region'}</strong>. I see high demand for cloud architecture and React specialists right now.
-                                </p>
+                                {aiInsight ? (
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className={`text-sm leading-relaxed font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}
+                                    >
+                                        {aiInsight}
+                                    </motion.p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className={`h-2.5 w-full rounded-full animate-pulse ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-200'}`} />
+                                        <div className={`h-2.5 w-4/5 rounded-full animate-pulse ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-200'}`} />
+                                        <p className="text-[10px] text-blue-500/60 font-bold uppercase tracking-tighter mt-4">Synthesizing African Market Data...</p>
+                                    </div>
+                                )}
                             </div>
 
                             <button
                                 onClick={onClose}
-                                className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition-all transform hover:-translate-y-1 active:scale-[0.98]"
+                                className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black text-lg rounded-[1.8rem] shadow-[0_20px_40px_-10px_rgba(59,130,246,0.3)] transition-all transform hover:-translate-y-1 active:scale-[0.98] tracking-wide"
                             >
-                                Launch My Dashboard
+                                Launch Experience
                             </button>
                         </div>
                     </motion.div>

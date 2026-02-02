@@ -27,7 +27,7 @@ CREATE TABLE public.profiles (
   -- ============================================
   
   -- Step 2: Career Goal - What the user wants to achieve
-  career_goal TEXT CHECK (career_goal IN ('FIND_JOB', 'UPSKILL', 'CAREER_SWITCH')),
+  career_goal TEXT,
   
   -- Step 3: Skills Inventory (stored as JSON array)
   skills JSONB DEFAULT '[]'::jsonb,

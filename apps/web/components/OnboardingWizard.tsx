@@ -105,10 +105,11 @@ const LogoIcon = () => (
 const TOTAL_STEPS = 4;
 
 // Career Goals Options
-const CAREER_GOALS: { value: CareerGoal; label: string; icon: typeof Search; description: string }[] = [
+const CAREER_GOALS: { value: CareerGoal | 'OTHER'; label: string; icon: typeof Search; description: string }[] = [
     { value: 'FIND_JOB', label: 'Find a Job', icon: Search, description: 'Looking for new employment opportunities' },
     { value: 'UPSKILL', label: 'Upskill', icon: RefreshCw, description: 'Improve my current skill set' },
     { value: 'CAREER_SWITCH', label: 'Career Switch', icon: Target, description: 'Transition to a new career path' },
+    { value: 'OTHER', label: 'Other', icon: Lightbulb, description: 'Specify your own custom goal' },
 ];
 
 // Business Stage Options
@@ -298,7 +299,7 @@ function OnboardingContent() {
                 return !!data.mode;
             case 2:
                 if (data.mode === 'CAREER') {
-                    return !!data.careerGoal;
+                    return !!data.careerGoal && data.careerGoal.length > 2;
                 } else if (data.mode === 'BUSINESS') {
                     return !!data.businessStage;
                 }
@@ -528,24 +529,50 @@ function OnboardingContent() {
                                                 <div className="onboarding-options">
                                                     {CAREER_GOALS.map((goal) => {
                                                         const Icon = goal.icon;
+                                                        const isSelected = data.careerGoal === goal.value || (goal.value === 'OTHER' && !['FIND_JOB', 'UPSKILL', 'CAREER_SWITCH'].includes(data.careerGoal || ''));
                                                         return (
                                                             <button
                                                                 key={goal.value}
-                                                                onClick={() => setData({ ...data, careerGoal: goal.value })}
-                                                                className={`onboarding-option ${data.careerGoal === goal.value ? 'selected' : ''}`}
+                                                                onClick={() => {
+                                                                    if (goal.value === 'OTHER') {
+                                                                        setData({ ...data, careerGoal: '' });
+                                                                    } else {
+                                                                        setData({ ...data, careerGoal: goal.value });
+                                                                    }
+                                                                }}
+                                                                className={`onboarding-option ${isSelected ? 'selected' : ''}`}
                                                             >
                                                                 <Icon className="onboarding-option-icon" />
                                                                 <div>
                                                                     <span className="onboarding-option-title">{goal.label}</span>
                                                                     <span className="onboarding-option-desc">{goal.description}</span>
                                                                 </div>
-                                                                {data.careerGoal === goal.value && (
+                                                                {isSelected && (
                                                                     <Check className="onboarding-option-check" />
                                                                 )}
                                                             </button>
                                                         );
                                                     })}
                                                 </div>
+
+                                                {/* Custom Goal Input */}
+                                                {(data.careerGoal === '' || !['FIND_JOB', 'UPSKILL', 'CAREER_SWITCH'].includes(data.careerGoal || '')) && data.careerGoal !== undefined && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="mt-4"
+                                                    >
+                                                        <label className="onboarding-label">Specify your goal</label>
+                                                        <input
+                                                            type="text"
+                                                            className="onboarding-input"
+                                                            placeholder="e.g. Become a Senior Cloud Architect"
+                                                            value={['FIND_JOB', 'UPSKILL', 'CAREER_SWITCH'].includes(data.careerGoal || '') ? '' : data.careerGoal}
+                                                            onChange={(e) => setData({ ...data, careerGoal: e.target.value })}
+                                                            autoFocus
+                                                        />
+                                                    </motion.div>
+                                                )}
                                             </>
                                         )}
 

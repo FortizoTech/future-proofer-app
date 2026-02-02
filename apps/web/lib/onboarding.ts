@@ -18,8 +18,8 @@ import { createClient } from '@/utils/supabase/client';
 // ============================================
 
 export type UserMode = 'CAREER' | 'BUSINESS';
-export type CareerGoal = 'FIND_JOB' | 'UPSKILL' | 'CAREER_SWITCH';
-export type BusinessStage = 'IDEA' | 'MVP' | 'EARLY' | 'GROWTH' | 'ESTABLISHED';
+export type CareerGoal = 'FIND_JOB' | 'UPSKILL' | 'CAREER_SWITCH' | string;
+export type BusinessStage = 'IDEA' | 'MVP' | 'EARLY' | 'GROWTH' | 'ESTABLISHED' | string;
 export type RevenueStage = 'PRE_REVENUE' | 'REVENUE' | 'PROFITABLE';
 
 export interface OnboardingData {
@@ -288,7 +288,13 @@ export async function saveProfile(
         // Add mode-specific fields
         if (data.mode === 'CAREER') {
             // Career Mode fields
-            profileData.career_goal = data.careerGoal;
+            // Map standard goals to descriptive labels + descriptions
+            let finalGoal = data.careerGoal;
+            if (data.careerGoal === 'FIND_JOB') finalGoal = 'Find a Job: Looking for new employment opportunities';
+            else if (data.careerGoal === 'UPSKILL') finalGoal = 'Upskill: Improve my current skill set';
+            else if (data.careerGoal === 'CAREER_SWITCH') finalGoal = 'Career Switch: Transition to a new career path';
+
+            profileData.career_goal = finalGoal;
             profileData.skills = data.skills;
             profileData.cv_url = data.cvUrl || null;
             profileData.cv_text = data.cvText || null;
@@ -300,7 +306,15 @@ export async function saveProfile(
             profileData.revenue_stage = null;
         } else if (data.mode === 'BUSINESS') {
             // Business Mode fields
-            profileData.business_stage = data.businessStage;
+            // Map standard stages to descriptive strings
+            let finalStage = data.businessStage;
+            if (data.businessStage === 'IDEA') finalStage = 'Idea Stage: Planning / Conceptualizing';
+            else if (data.businessStage === 'MVP') finalStage = 'MVP: 0-6 months old';
+            else if (data.businessStage === 'EARLY') finalStage = 'Early Stage: 6 months - 2 years';
+            else if (data.businessStage === 'GROWTH') finalStage = 'Growth Stage: 2-5 years';
+            else if (data.businessStage === 'ESTABLISHED') finalStage = 'Established: 5+ years';
+
+            profileData.business_stage = finalStage;
             profileData.business_sector = data.businessSector || null;
             profileData.team_size = data.teamSize || null;
             profileData.revenue_stage = data.revenueStage || null;

@@ -6,9 +6,10 @@ import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 import Head from 'next/head';
 import { WelcomeModal } from '@/components/WelcomeModal';
+import MapBackground from '@/components/ui/MapBackground';
 import '@/assets/css/dashboard.css';
 import { MentorshipRequestModal, type MentorshipProfile } from '@/components/mentorship/MentorshipRequestModal';
-import { Mic, Paperclip, Send, Settings, User, LogOut, FileText, CheckCircle, Play, HelpCircle, Bot, TrendingUp, Sparkles, MessageCircle, X, Loader2, StopCircle, Trash2, Rocket, ChevronRight } from 'lucide-react';
+import { Mic, Paperclip, Send, Settings, User, LogOut, FileText, CheckCircle, Play, HelpCircle, Bot, TrendingUp, Sparkles, MessageCircle, X, Loader2, StopCircle, Trash2, Rocket, ChevronRight, Sun, Moon, MapPin } from 'lucide-react';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import '@/assets/css/chat-features.css';
@@ -25,84 +26,109 @@ interface ChatMessage {
 // ============================================
 // COMPONENT: PROFILE PANEL (LEFT)
 // ============================================
-const ProfilePanel = ({ user, profile, onLogout }: { user: any, profile: any, onLogout: () => void }) => {
+const ProfilePanel = ({ user, profile, onLogout, isDarkMode, toggleTheme }: { user: any, profile: any, onLogout: () => void | Promise<void>, isDarkMode: boolean, toggleTheme: () => void }) => {
   const [showSettings, setShowSettings] = useState(false);
 
   return (
-    <div className="glass-panel profile-panel">
-      {/* Header / Logo */}
-      <div className="profile-header">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-900/50">
-          FP
-        </div>
-        <span className="profile-logo-text">Future Proofer</span>
-      </div>
-
-      {/* User Card */}
-      <div className="profile-card">
-        <div className="profile-avatar-large">
+    <div className="glass-panel profile-panel flex flex-col h-full relative !pt-0">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth pt-5">
+        {/* Header / Logo - Positioned at the very top */}
+        <div className="profile-header mb-4">
           <Image
-            src={profile?.avatar_url || user?.user_metadata?.avatar_url || "https://randomuser.me/api/portraits/men/32.jpg"}
-            alt={profile?.full_name || user?.user_metadata?.full_name || "User"}
-            width={80}
-            height={80}
-            className="profile-avatar-img"
+            src={isDarkMode ? "/logo/logo_white_transparent background.png" : "/logo/logo-transparent.png"}
+            alt="Future Proofer"
+            width={130}
+            height={35}
+            className="profile-logo-img h-auto w-auto max-w-[130px]"
+            priority
           />
         </div>
-        <h2 className="profile-name">
-          {profile?.full_name || user?.user_metadata?.full_name || "Guest User"}
-        </h2>
-        <div className="profile-role">
-          <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">
-            {profile?.mode === 'BUSINESS' ? 'Business Focus' : 'Expertise'}
+
+        {/* User Card - Tighter gap to logo, but more space below */}
+        <div className="profile-card">
+          <div className="profile-avatar-large">
+            <Image
+              src={profile?.avatar_url || user?.user_metadata?.avatar_url || "https://randomuser.me/api/portraits/men/32.jpg"}
+              alt={profile?.full_name || user?.user_metadata?.full_name || "User"}
+              width={80}
+              height={80}
+              className="profile-avatar-img"
+            />
           </div>
-          <div className="skills-container">
-            {profile?.mode === 'BUSINESS' ? (
-              <span className="profile-skill-tag">{profile?.business_sector || 'Business Lead'}</span>
-            ) : (
-              <>
-                {(profile?.skills || ['Software Development']).slice(0, 3).map((skill: string, i: number) => (
-                  <span key={i} className="profile-skill-tag">{skill}</span>
-                ))}
-                {profile?.skills?.length > 3 && (
-                  <span className="profile-skill-tag" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
-                    +{profile.skills.length - 3} more
-                  </span>
+          <h2 className="profile-name mb-4">
+            {profile?.full_name || user?.user_metadata?.full_name || "Guest User"}
+          </h2>
+
+          <div className="profile-details-stack flex flex-col gap-6">
+            <div className="profile-role">
+              <div className="text-[10px] mb-2 uppercase tracking-[0.15em] font-bold text-blue-500/80">
+                {profile?.mode === 'BUSINESS' ? 'Business Focus' : 'Expertise'}
+              </div>
+              <div className="skills-container">
+                {profile?.mode === 'BUSINESS' ? (
+                  <span className="profile-skill-tag">{profile?.business_sector || 'Business Lead'}</span>
+                ) : (
+                  <>
+                    {(profile?.skills || ['Software Development']).slice(0, 3).map((skill: string, i: number) => (
+                      <span key={i} className="profile-skill-tag">{skill}</span>
+                    ))}
+                    {profile?.skills?.length > 3 && (
+                      <span className="profile-skill-tag bg-slate-100 dark:bg-white/5 text-slate-500">
+                        +{profile.skills.length - 3}
+                      </span>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </div>
+            </div>
+
+            <div className="profile-goal-box py-4 border-y border-slate-200 dark:border-white/10">
+              <p className="text-sm line-clamp-2 font-medium leading-relaxed dark:text-slate-300">
+                {profile?.mode === 'BUSINESS'
+                  ? (profile?.business_stage?.split(':')[0]?.replace(/_/g, ' ') || 'Business Growth')
+                  : (profile?.career_goal?.split(':')[0]?.replace(/_/g, ' ') || 'Career Development')}
+              </p>
+            </div>
+
+            <div className="profile-location">
+              <div className="text-[10px] mb-2 uppercase tracking-[0.15em] font-bold text-slate-400">Location</div>
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <MapPin size={14} className="text-blue-500" />
+                <span>{profile?.country || 'Accra, Ghana'}</span>
+              </div>
+            </div>
           </div>
-          <p className="mt-2 text-slate-400">
-            {profile?.career_goal ? profile.career_goal.replace(/_/g, ' ') : 'Full Stack Engineer'}
-          </p>
-        </div>
-        <div className="profile-location">
-          <span className="profile-location-icon">📍</span>
-          <span>{profile?.country || 'Accra, Ghana'}</span>
         </div>
       </div>
 
-      {/* Navigation / Actions */}
-      <div className="profile-actions">
-        {showSettings && (
-          <div className="settings-dropdown">
-            <button className="profile-btn" onClick={() => setShowSettings(false)}>
-              <User size={16} />
-              <span>My Profile</span>
-            </button>
-            <button className="profile-btn text-red-400 hover:bg-red-500/10" onClick={onLogout}>
-              <LogOut size={16} />
-              <span>Logout</span>
-            </button>
-          </div>
-        )}
-        <button
-          className={`profile-btn ${showSettings ? 'active' : ''}`}
-          onClick={() => setShowSettings(!showSettings)}
-        >
-          <Settings size={18} />
-          <span>Settings</span>
-        </button>
+      {/* Sticky Bottom Actions */}
+      <div className="profile-actions-bottom pb-2 pt-4 border-t border-slate-200 dark:border-white/10 bg-inherit">
+        <div className="relative">
+          {showSettings && (
+            <div className="settings-dropdown">
+              <button className="profile-btn" onClick={() => setShowSettings(false)}>
+                <User size={16} />
+                <span>My Profile</span>
+              </button>
+              <button className="profile-btn" onClick={toggleTheme}>
+                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </button>
+              <button className="profile-btn text-red-500 hover:bg-red-50" onClick={onLogout}>
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+          <button
+            className={`profile-btn w-full ${showSettings ? 'active' : ''}`}
+            onClick={() => setShowSettings(!showSettings)}
+          >
+            <Settings size={18} />
+            <span>Settings</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -116,92 +142,103 @@ const WidgetsPanel = ({ profile }: { profile: any }) => {
   const currentCountry = profile?.country || "West Africa";
 
   return (
-    <div className="glass-panel widgets-panel">
-      {/* Date Display */}
-      <div className="widget-date">
-        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+    <div className="glass-panel widgets-panel flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto no-scrollbar pr-1">
+        {/* Date Display */}
+        <div className="widget-date">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
+
+        {/* Readiness Score */}
+        <div className="score-widget">
+          <div className="score-title">Overall Readiness Score</div>
+          <div className="score-circle">
+            <svg className="score-svg" viewBox="0 0 100 100">
+              <circle className="score-track" cx="50" cy="50" r="45" />
+              <circle
+                className="score-value-path"
+                cx="50"
+                cy="50"
+                r="45"
+                strokeDasharray="283"
+                strokeDashoffset="93" // 67%
+              />
+            </svg>
+            <div className="score-content">
+              <div className="score-number">67%</div>
+              <div className="score-label">Complete</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Next Actions */}
+        <div className="actions-widget">
+          <div className="widget-header">
+            <h3 className="widget-title">Next Actions</h3>
+          </div>
+          <div className="action-list">
+            <div className="action-item">
+              <CheckCircle size={16} className="action-check" />
+              <span>Complete your profile</span>
+            </div>
+            <div className="action-item">
+              <CheckCircle size={16} className="action-check" />
+              <span>Connect your calendar</span>
+            </div>
+            <div className="action-item">
+              <div className="w-4 h-4 rounded-full border-2 border-blue-400 mt-0.5 flex-shrink-0" />
+              <span>Join Me {currentCountry} Tech Forum</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Skill Demand Metric Widget */}
+        <div className="actions-widget" style={{ padding: '1rem', background: 'rgba(34, 197, 94, 0.05)', borderColor: 'rgba(34, 197, 94, 0.1)' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp size={18} className="text-green-400" />
+            <h3 className="widget-title" style={{ fontSize: '0.85rem' }}>Skill Demand in {currentCountry}</h3>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between items-center text-xs text-gray-400">
+              <div className="flex flex-col">
+                <span className="font-bold text-white mb-1">{currentSkill}</span>
+                <span className="text-[10px] text-gray-400 max-w-[180px] leading-tight mb-2">
+                  {currentSkill.toLowerCase().includes('software') ? 'Design, development, and maintenance of modular software systems.' :
+                    currentSkill.toLowerCase().includes('data') ? 'Extracting actionable insights from complex datasets to drive business decisions.' :
+                      currentSkill.toLowerCase().includes('cloud') ? 'Deploying and managing scalable infrastructure on distributed networks.' :
+                        currentSkill.toLowerCase().includes('cyber') ? 'Protecting critical digital assets and networks from unauthorized access.' :
+                          'Developing specialized expertise to maintain competitive edge in the local tech market.'}
+                </span>
+              </div>
+              <span className="text-green-400 font-bold self-start mt-1">82%</span>
+            </div>
+            <div className="w-full h-1 bg-gray-700 rounded-full mt-1">
+              <div className="h-full bg-green-500 rounded-full" style={{ width: '82%' }}></div>
+            </div>
+            <p className="text-[10px] text-gray-500 mt-2">
+              AI analysis shows a 15% increase in demand for your skillset in {profile?.country ? profile.country : 'Lagos and Accra'} this month.
+            </p>
+          </div>
+        </div>
+
+        {/* Media / Get Wants (Small Placeholder) */}
+        <div className="media-widget" style={{ opacity: 0.6, transform: 'scale(0.9)', transformOrigin: 'right' }}>
+          <div className="media-cover">
+            <div className="w-full h-full bg-slate-700 flex items-center justify-center">
+              <Sparkles size={16} className="text-slate-500" />
+            </div>
+          </div>
+          <div className="media-info">
+            <div className="media-title">Resources</div>
+            <div className="media-subtitle">Architecture Series</div>
+          </div>
+        </div>
       </div>
 
-      {/* Readiness Score */}
-      <div className="score-widget">
-        <div className="score-title">Overall Readiness Score</div>
-        <div className="score-circle">
-          <svg className="score-svg" viewBox="0 0 100 100">
-            <circle className="score-track" cx="50" cy="50" r="45" />
-            <circle
-              className="score-value-path"
-              cx="50"
-              cy="50"
-              r="45"
-              strokeDasharray="283"
-              strokeDashoffset="93" // 67%
-            />
-          </svg>
-          <div className="score-content">
-            <div className="score-number">67%</div>
-            <div className="score-label">Complete</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Next Actions */}
-      <div className="actions-widget">
-        <div className="widget-header">
-          <h3 className="widget-title">Next Actions</h3>
-        </div>
-        <div className="action-list">
-          <div className="action-item">
-            <CheckCircle size={16} className="action-check" />
-            <span>Complete your profile</span>
-          </div>
-          <div className="action-item">
-            <CheckCircle size={16} className="action-check" />
-            <span>Connect your calendar</span>
-          </div>
-          <div className="action-item">
-            <div className="w-4 h-4 rounded-full border-2 border-blue-400 mt-0.5 flex-shrink-0" />
-            <span>Join Me {currentCountry} Tech Forum</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Skill Demand Metric Widget */}
-      <div className="actions-widget" style={{ padding: '1rem', background: 'rgba(34, 197, 94, 0.05)', borderColor: 'rgba(34, 197, 94, 0.1)' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <TrendingUp size={18} className="text-green-400" />
-          <h3 className="widget-title" style={{ fontSize: '0.85rem' }}>Skill Demand in {currentCountry}</h3>
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between items-center text-xs text-gray-400">
-            <span>{currentSkill}</span>
-            <span className="text-green-400 font-bold">82%</span>
-          </div>
-          <div className="w-full h-1 bg-gray-700 rounded-full mt-1">
-            <div className="h-full bg-green-500 rounded-full" style={{ width: '82%' }}></div>
-          </div>
-          <p className="text-[10px] text-gray-500 mt-2">
-            AI analysis shows a 15% increase in demand for your skillset in {profile?.country ? profile.country : 'Lagos and Accra'} this month.
-          </p>
-        </div>
-      </div>
-
-      {/* Media / Get Wants (Small Placeholder) */}
-      <div className="media-widget" style={{ opacity: 0.6, transform: 'scale(0.9)', transformOrigin: 'right' }}>
-        <div className="media-cover">
-          <div className="w-full h-full bg-slate-700 flex items-center justify-center">
-            <Sparkles size={16} className="text-slate-500" />
-          </div>
-        </div>
-        <div className="media-info">
-          <div className="media-title">Resources</div>
-          <div className="media-subtitle">Architecture Series</div>
-        </div>
-      </div>
-
-      {/* Support Button */}
-      <div className="support-container">
-        <button className="support-btn" onClick={() => window.open('https://wa.me/yournumber', '_blank')}>
-          <MessageCircle size={18} fill="currentColor" />
+      {/* WhatsApp Support Button at the bottom of Right Bar */}
+      <div className="mt-auto pt-6">
+        <button className="support-btn-sticky" onClick={() => window.open('https://wa.me/2202350530', '_blank')}>
+          <MessageCircle size={15} fill="currentColor" />
           Support
         </button>
       </div>
@@ -220,6 +257,24 @@ export default function DashboardPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false); // Light Mode by default per request
+  const [aiGreetingInsight, setAiGreetingInsight] = useState<string>("");
+
+  // Load theme preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('dashboard-theme');
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === 'dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('dashboard-theme', newVal ? 'dark' : 'light');
+      return newVal;
+    });
+  };
 
   // Initialize Hooks
   const {
@@ -272,13 +327,56 @@ export default function DashboardPage() {
       if (profileData) {
         setProfile(profileData);
 
-        // Dynamic Initial Greeting
-        setMessages([
-          {
-            role: 'ai',
-            content: `Welcome back, ${profileData.full_name?.split(' ')[0] || 'there'}! I've been analyzing the tech ecosystem in ${profileData.country || 'your region'}. Ready to continue with your ${profileData.career_goal || 'career'} journey?`
+        // Fetch AI-generated Professional Greeting
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: "Hi! Please give me a professional welcome and a brief insight based on my profile.",
+              conversationHistory: [],
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // Handle structured response
+            let aiContent = "";
+            if (data.sections && data.sections.length > 0) {
+              // Extract the first paragraph or summary
+              const mainSection = data.sections.find((s: any) => s.type === 'paragraph');
+              aiContent = mainSection ? mainSection.text : "Welcome! I'm ready to help you thrive in the African tech ecosystem.";
+
+              // If there's a second paragraph or specific insight type, use it for the modal
+              const insightSection = data.sections.find((s: any) => s.type === 'insight' || s.intent === 'statistic');
+              if (insightSection) {
+                setAiGreetingInsight(insightSection.text);
+              } else if (data.sections.length > 1) {
+                setAiGreetingInsight(data.sections[1].text);
+              }
+            } else {
+              aiContent = "Welcome! I've analyzed your profile and I'm ready to help you navigate your career journey in Africa.";
+            }
+
+            setMessages([{
+              role: 'ai',
+              content: aiContent
+            }]);
+
+            // If there's high-level insights, maybe set them elsewhere?
+            // For now, just the greeting.
+          } else {
+            throw new Error('Fallback to static');
           }
-        ]);
+        } catch (error) {
+          // Fallback to a cleaner static greeting if API fails
+          setMessages([
+            {
+              role: 'ai',
+              content: `Hello ${profileData.full_name?.split(' ')[0] || 'there'}! I've analyzed the tech ecosystem in ${profileData.country || 'your region'}. Let's work on achieving your goal of becoming a skilled professional.`
+            }
+          ]);
+        }
 
         // Dynamic Initial Suggestions
         setSuggestions([
@@ -438,7 +536,7 @@ export default function DashboardPage() {
 
   if (profile?.mode === 'BUSINESS') {
     return (
-      <div className="dashboard-container">
+      <div className={`dashboard-container ${!isDarkMode ? 'light-theme' : ''}`}>
         <Head>
           <title>Thnkforge - BusinessMate Coming Soon</title>
         </Head>
@@ -478,17 +576,37 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="dashboard-container">
+    <div className={`dashboard-container ${!isDarkMode ? 'light-theme' : ''}`}>
       <Head>
         <title>Thnkforge - AI CareerMate</title>
       </Head>
 
       <div className="glass-layout">
         {/* Left Panel: Profile */}
-        <ProfilePanel user={user} profile={profile} onLogout={handleLogout} />
+        <ProfilePanel
+          user={user}
+          profile={profile}
+          onLogout={handleLogout}
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+        />
+
+        {profile && (
+          <WelcomeModal
+            isOpen={isWelcomeOpen}
+            onClose={() => setIsWelcomeOpen(false)}
+            userName={profile.full_name?.split(' ')[0] || 'Explorer'}
+            goal={profile.career_goal}
+            country={profile.country}
+            skills={profile.skills}
+            aiInsight={aiGreetingInsight}
+            isDarkMode={isDarkMode}
+          />
+        )}
 
         {/* Center Panel: Chat */}
-        <div className="glass-panel chat-panel">
+        <div className="glass-panel chat-panel relative overflow-hidden">
+          <MapBackground inline />
           {/* Chat Header */}
           <div className="chat-header">
             <div className="chat-header-left">
