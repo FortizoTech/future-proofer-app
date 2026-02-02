@@ -1,42 +1,40 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { redirect } from "next/navigation"; // CRITICAL IMPORT
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url);
-    const code = searchParams.get("code");
-    // if "next" is in param, use it as the redirect URL
-    const next = searchParams.get("next") ?? "/dashboard";
+    const requestUrl = new URL(request.url);
+    const code = requestUrl.searchParams.get("code");
+    const next = requestUrl.searchParams.get("next") ?? "/dashboard";
 
     if (code) {
         const supabase = await createClient();
-
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error && data.user) {
-            // SUCCESS: Check if onboarding is completed
+            // Check if user has completed onboarding
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('onboarding_completed')
                 .eq('id', data.user.id)
-                .single();
+                .maybeSingle();
 
-            let redirectUrl = `${origin}/onboarding`;
+            let target = '/onboarding';
 
             if (profile?.onboarding_completed) {
-                redirectUrl = `${origin}${next}`;
+                // Fully onboarded - go to dashboard or intended target
+                target = next;
             } else if (next.includes('/onboarding')) {
-                // If they are not onboarded but the 'next' target is already onboarding (with potential params)
-                redirectUrl = `${origin}${next}`;
+                // If they are not onboarded but the 'next' target is already onboarding (with params)
+                target = next;
             }
 
-            return redirect(redirectUrl);
+            console.log('[AuthCallback] Redirecting to:', target);
+            return NextResponse.redirect(new URL(target, request.url));
         } else {
             console.error("Auth Callback Error:", error);
         }
     }
 
-    // FAILURE:
-    // Return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/login?error=AuthError`);
+    // Return the user to login page with error
+    return NextResponse.redirect(new URL('/login?error=AuthError', request.url));
 }
