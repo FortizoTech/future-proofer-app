@@ -1,10 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
-import careerSidebar from '@/components/CareerSidebar';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 
-// Simple manual check for Next.js redirect errors if the helper is missing
-const isRedirectError = (err: any) => err?.digest?.startsWith('NEXT_REDIRECT');
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function DashboardLayout({
     children,
@@ -12,8 +10,6 @@ export default async function DashboardLayout({
     children: React.ReactNode;
 }) {
     const supabase = await createClient();
-    const cookieStore = await cookies();
-    console.log('DashboardLayout Request Cookies:', cookieStore.getAll().map(c => c.name));
 
     try {
         const {
@@ -22,9 +18,11 @@ export default async function DashboardLayout({
         } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            console.error('DashboardLayout Auth Error:', authError?.message || 'No user');
-            redirect(`/login?error=${encodeURIComponent(authError?.message || 'Auth session missing!')}`);
+            console.error('[DashboardLayout] Auth Error:', authError?.message || 'No user session');
+            redirect('/login?error=Auth+session+missing');
         }
+
+        console.log('[DashboardLayout] Auth success for:', user.email);
 
         // Profile fetch - don't let this fail the whole layout
         const { data: profile, error: profileError } = await supabase
@@ -37,14 +35,19 @@ export default async function DashboardLayout({
             console.warn('DashboardLayout profile fetch error:', profileError.message);
         }
 
+        // Enforce onboarding completion
+        if (!profile || !profile.onboarding_completed) {
+            console.log('[DashboardLayout] Profile incomplete or missing, redirecting to onboarding');
+            redirect('/onboarding');
+        }
+
         return (
             <div className="min-h-screen bg-slate-50 font-sans">
                 {children}
             </div>
         );
     } catch (err: any) {
-        if (isRedirectError(err)) throw err;
         console.error('DashboardLayout runtime error:', err);
-        redirect(`/login?error=${encodeURIComponent(err.message || 'Internal server error in dashboard')}`);
+        redirect('/login?error=Internal+server+error');
     }
 }

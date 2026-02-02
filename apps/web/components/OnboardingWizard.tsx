@@ -41,6 +41,7 @@ import {
     extractCVText,
     completeOnboarding
 } from "@/lib/onboarding";
+import { AFRICAN_COUNTRIES } from "@/lib/constants";
 
 // ============================================
 // ANIMATION VARIANTS
@@ -160,36 +161,47 @@ function OnboardingContent() {
         country: '',
     });
 
-    // Handle mode selection from landing page
-    useEffect(() => {
-        const modeParam = searchParams.get('mode');
-        if (modeParam) {
-            const upperMode = modeParam.toUpperCase() as UserMode;
-            if (upperMode === 'CAREER' || upperMode === 'BUSINESS') {
-                setData(prev => ({ ...prev, mode: upperMode }));
-                setStep(2);
-            }
-        }
-    }, [searchParams]);
-
     // Load data from localStorage on mount
     useEffect(() => {
         const savedData = localStorage.getItem('onboarding_data');
+        let currentData: OnboardingData = {
+            mode: '',
+            skills: [],
+            fullName: '',
+            email: '',
+            country: '',
+        };
+
         if (savedData) {
             try {
-                setData(JSON.parse(savedData));
+                currentData = JSON.parse(savedData);
             } catch (e) {
                 console.error('Failed to parse saved onboarding data', e);
             }
         }
 
-        const savedStep = localStorage.getItem('onboarding_step');
-        if (savedStep) {
-            setStep(parseInt(savedStep));
+        // Priority 1: URL Parameters
+        const modeParam = searchParams.get('mode');
+        if (modeParam) {
+            const upperMode = modeParam.toUpperCase() as UserMode;
+            if (upperMode === 'CAREER' || upperMode === 'BUSINESS') {
+                currentData.mode = upperMode;
+                setData(currentData);
+                setStep(2);
+            } else {
+                setData(currentData);
+                const savedStep = localStorage.getItem('onboarding_step');
+                if (savedStep) setStep(parseInt(savedStep));
+            }
+        } else {
+            // Priority 2: Local Storage
+            setData(currentData);
+            const savedStep = localStorage.getItem('onboarding_step');
+            if (savedStep) setStep(parseInt(savedStep));
         }
 
         setHasMounted(true);
-    }, []);
+    }, []); // Run once on mount
 
     // Save data to localStorage whenever it changes (only after mounting)
     useEffect(() => {
@@ -233,7 +245,8 @@ function OnboardingContent() {
                 setData(prev => ({
                     ...prev,
                     email: user.email || prev.email,
-                    fullName: metadata?.full_name || metadata?.name || prev.fullName
+                    fullName: metadata?.full_name || metadata?.name || prev.fullName,
+                    avatarUrl: metadata?.avatar_url || metadata?.picture || prev.avatarUrl
                 }));
             }
         };
@@ -243,15 +256,27 @@ function OnboardingContent() {
         if (data.country) return; // Skip if already set
 
         const detectCountry = async () => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+
             try {
-                // Using ipapi for simple country detection (no API key needed for basic usage)
-                const response = await fetch('https://ipapi.co/json/');
+                // Primary service: ipapi.co (no API key needed for basic usage)
+                const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
                 const data = await response.json();
-                if (data.country_name) {
+                if (data.country_name && AFRICAN_COUNTRIES.includes(data.country_name)) {
                     setData(prev => ({ ...prev, country: data.country_name }));
+                } else if (data.country_name) {
+                    console.warn(`Detected country ${data.country_name} is outside Africa. Skipping auto-fill.`);
                 }
-            } catch (error) {
-                console.error('Failed to detect country:', error);
+            } catch (error: any) {
+                // If the first service fails or times out, we fail silently to not disrupt the UI
+                if (error.name === 'AbortError') {
+                    console.warn('Country detection timed out.');
+                } else {
+                    console.warn('Failed to detect country automatically:', error.message);
+                }
+            } finally {
+                clearTimeout(timeoutId);
             }
         };
         detectCountry();
@@ -757,21 +782,11 @@ function OnboardingContent() {
                                                     style={{ appearance: 'none', background: 'transparent' }}
                                                 >
                                                     <option value="" disabled>Select your country</option>
-                                                    <optgroup label="West Africa">
-                                                        <option value="The Gambia">The Gambia</option>
-                                                        <option value="Senegal">Senegal</option>
-                                                        <option value="Nigeria">Nigeria</option>
-                                                        <option value="Ghana">Ghana</option>
-                                                        <option value="Sierra Leone">Sierra Leone</option>
-                                                        <option value="Liberia">Liberia</option>
-                                                        <option value="Ivory Coast">Ivory Coast</option>
-                                                    </optgroup>
-                                                    <optgroup label="Other">
-                                                        <option value="United States">United States</option>
-                                                        <option value="United Kingdom">United Kingdom</option>
-                                                        <option value="Canada">Canada</option>
-                                                        <option value="Other">Other</option>
-                                                    </optgroup>
+                                                    {AFRICAN_COUNTRIES.map((country) => (
+                                                        <option key={country} value={country}>
+                                                            {country}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                                 <div style={{ position: 'absolute', right: '1rem', pointerEvents: 'none', color: '#94a3b8' }}>
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

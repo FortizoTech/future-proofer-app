@@ -1,10 +1,8 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-    console.log('--- Middleware Start: ', request.nextUrl.pathname, ' ---');
-    console.log('Cookies in Request:', request.cookies.getAll().map(c => c.name));
-
+    // 1. Create an initial unmodified response
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -16,50 +14,73 @@ export async function updateSession(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value
+                getAll() {
+                    return request.cookies.getAll()
                 },
-                set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
+                setAll(cookiesToSet) {
+                    // Update internal request cookies so server components see the new state
+                    cookiesToSet.forEach(({ name, value }) =>
+                        request.cookies.set(name, value)
+                    )
+
+                    // CRITICAL FIX: Do not recreate 'response = NextResponse.next()' here repeatedly.
+                    // Instead, re-create it ONCE if you need to pass updated request cookies,
+                    // OR just act on the 'response' object we defined at the top.
+                    // For safest behavior with Supabase + Next 15:
                     response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
+                        request,
                     })
-                    response.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
-                },
-                remove(name: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
+
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        response.cookies.set(name, value, options)
+                    )
                 },
             },
         }
     )
 
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error) console.log('Middleware getUser error:', error.message)
-    console.log('--- Middleware Result ---', user ? `User Found: ${user.email}` : 'No User')
+    // 2. Refresh the token
+    // This will trigger 'setAll' if the token needs refreshing or wasn't properly synced
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // 3. Protected Routes Logic
+    // Customize this list to match your actual route structure
+    const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
+        request.nextUrl.pathname.startsWith('/onboarding')
+
+    if (isProtectedRoute && !user) {
+        const next = request.nextUrl.pathname + request.nextUrl.search;
+        return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, request.url))
+    }
+
+    // If user is logged in, redirect them away from Auth pages
+    if (request.nextUrl.pathname === '/login' && user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile?.onboarding_completed) {
+            return NextResponse.redirect(new URL('/onboarding', request.url))
+        }
+
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Special case for landing page: if logged in and onboarding done, go to dashboard.
+    // IF NOT DONE: Allow them to stay on the landing page (this allows "exiting" the onboarding flow).
+    if (request.nextUrl.pathname === '/' && user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.onboarding_completed) {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+    }
 
     return response
 }

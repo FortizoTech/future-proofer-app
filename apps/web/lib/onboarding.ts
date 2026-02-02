@@ -47,6 +47,7 @@ export interface OnboardingData {
     fullName: string;
     email: string;
     country?: string;
+    avatarUrl?: string;
 }
 
 export interface UploadResult {
@@ -277,6 +278,7 @@ export async function saveProfile(
             id: userId,
             email: data.email,
             full_name: data.fullName,
+            avatar_url: data.avatarUrl || null,
             country: data.country || null,
             mode: data.mode.toUpperCase(),
             onboarding_completed: true,

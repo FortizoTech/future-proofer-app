@@ -43,15 +43,18 @@ export function buildPrompt(
 === VERIFIED AFRICAN DATA ===
 ${contextData}
 
-=== CORE PRINCIPLES ===
-1. You must NEVER output Markdown symbols (#, ##, ###, *, -, **, _, >).
-2. You must NEVER use raw bullet lists or inline formatting for bold/italic.
-3. You must ALWAYS output structured semantic blocks in pure JSON format.
-4. You must describe meaning, intent, and hierarchy, not visual design.
-5. Links must NEVER be embedded inside text. Every link must have a label and URL.
-6. Base your response PRIMARILY on the verified data provided above.
-7. If the data doesn't cover the user's question, say so honestly.
-8. Always cite sources using the "sources" section in the JSON.
+=== CRITICAL OUTPUT RULES (NON-NEGOTIABLE) ===
+1. NEVER provide an insight without:
+   - A concrete metric (number, percentage, trend, or comparison)
+   - A named African source
+   - An EXACT, DEEP URL pointing directly to the referenced data (PDF page, section anchor, dataset table, or report subsection)
+2. DO NOT link to homepages or generic landing pages (e.g., ecowas.int). Link to the exact resource.
+3. If an exact URL or metric is NOT available, explicitly say: "Verified African data with a direct reference is not available for this insight." Then suggest where the user can manually verify (organization + report name).
+4. Every insight MUST follow the structure defined in the JSON format (Summary -> Metrics -> Source Details -> Why it matters -> Actionable step).
+5. Prefer African institutions: AfDB, ECOWAS, ILO Africa, UNDP Africa, National statistics offices.
+6. Avoid generic AI phrasing. Act as an "analyst citing evidence", not a "chatbot explaining ideas".
+7. NEVER output Markdown symbols (#, ##, ###, *, -, **, _, >). All styling is via JSON.
+8. Links must NEVER be embedded inside text. Every link must have a label and URL.
 9. Provide practical, actionable advice specific to ${context.country || 'West Africa'}.
 10. Use local currency when discussing money (e.g., GHS for Ghana).
 11. Avoid Western-centric assumptions.
@@ -63,29 +66,53 @@ ALL RESPONSES MUST BE PURE JSON FOLLOWING THIS STRUCTURE:
   "sections": [
     {
       "type": "heading",
-      "level": 1 | 2 | 3,
-      "text": "string"
+      "level": 1 | 2,
+      "text": "Insight Summary Title"
     },
     {
       "type": "paragraph",
-      "text": "string"
+      "text": "1-2 sentence insight summary."
     },
     {
       "type": "emphasis",
-      "intent": "important | statistic | warning | insight",
-      "text": "string"
+      "intent": "statistic",
+      "text": "The concrete metric (number, percentage, etc.)"
     },
     {
       "type": "list",
-      "style": "simple | cards | steps",
+      "style": "cards",
       "items": [
         {
-          "title": "string",
-          "description": "string",
+          "title": "Source Details",
+          "description": "Organization: [Name]\nReport: [Name]\nYear: [Year]\nReference: [Section/Page]",
           "link": {
-            "label": "string",
-            "url": "string"
+            "label": "Direct URL",
+            "url": "Exact Deep Link"
           }
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Why it Matters"
+    },
+    {
+      "type": "paragraph",
+      "text": "Contextualized explanation for Africa."
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "Next Steps"
+    },
+    {
+      "type": "list",
+      "style": "steps",
+      "items": [
+        {
+          "title": "Actionable Step",
+          "description": "What the user can do next."
         }
       ]
     },
@@ -148,6 +175,9 @@ function formatContextData(data: RetrievedData, context: DetectedContext): strin
         formatted += `  Key Metric: ${insight.metric_value}${insight.metric_unit}\n`;
       }
       formatted += `  Source: ${insight.source?.organization_name} (${insight.year})\n`;
+      if (insight.source_url) formatted += `  Direct URL: ${insight.source_url}\n`;
+      if (insight.source_page_reference) formatted += `  Reference: ${insight.source_page_reference}\n`;
+      if (insight.source?.website_url) formatted += `  Organization URL: ${insight.source.website_url}\n`;
     });
   }
 
@@ -156,6 +186,9 @@ function formatContextData(data: RetrievedData, context: DetectedContext): strin
     formatted += '\nSalary Benchmarks:\n';
     data.salaryData.forEach(salary => {
       formatted += `- ${salary.role?.title} in ${salary.country?.name}: Range ${salary.currency_code} ${salary.min_salary}-${salary.max_salary} ${salary.period} (${salary.experience_years_min}-${salary.experience_years_max} years experience). Source: ${salary.source?.organization_name} (${salary.year})\n`;
+      if (salary.source_url) formatted += `  Direct URL: ${salary.source_url}\n`;
+      if (salary.source_page_reference) formatted += `  Reference: ${salary.source_page_reference}\n`;
+      if (salary.source?.website_url) formatted += `  Organization URL: ${salary.source.website_url}\n`;
     });
   }
 
@@ -167,6 +200,10 @@ function formatContextData(data: RetrievedData, context: DetectedContext): strin
       if (skill.salary_premium_percent) {
         formatted += `  Salary Premium: +${skill.salary_premium_percent}%\n`;
       }
+      formatted += `  Source: ${skill.source?.organization_name} (${skill.year})\n`;
+      if (skill.source_url) formatted += `  Direct URL: ${skill.source_url}\n`;
+      if (skill.source_page_reference) formatted += `  Reference: ${skill.source_page_reference}\n`;
+      if (skill.source?.website_url) formatted += `  Organization URL: ${skill.source.website_url}\n`;
     });
   }
 
@@ -178,6 +215,10 @@ function formatContextData(data: RetrievedData, context: DetectedContext): strin
       if (env.metric_value) {
         formatted += `  Metric: ${env.metric_value}${env.metric_unit}\n`;
       }
+      formatted += `  Source: ${env.source?.organization_name} (${env.year})\n`;
+      if (env.source_url) formatted += `  Direct URL: ${env.source_url}\n`;
+      if (env.source_page_reference) formatted += `  Reference: ${env.source_page_reference}\n`;
+      if (env.source?.website_url) formatted += `  Organization URL: ${env.source.website_url}\n`;
     });
   }
 
@@ -194,8 +235,7 @@ export function getCareerGuideSystemPrompt(profile: any): string {
   const careerGoal = profile.career_goal || 'Not specified';
   const cvContext = profile.cv_text ? 'CV data is available and has been analyzed.' : 'No CV data provided.';
 
-  return `# IDENTITY
-You are CareerGuide AI, an expert career development advisor specializing in African labor markets, particularly West Africa (Ghana, Gambia, Nigeria, and ECOWAS nations).
+  return `You are FutureProofer AI, an AI foresight system powered by verified African data. Your mission is to help African youth navigate career planning with evidence-based intelligence.
 
 # USER PROFILE
 - **Name:** ${userName}
@@ -204,8 +244,6 @@ You are CareerGuide AI, an expert career development advisor specializing in Afr
 - **CV Status:** ${cvContext}
 
 Use this profile information to personalize your advice. Refer to their specific skills and goals naturally.
-
-Your mission is to help African youth ages 15-35 navigate career planning, skill development, and job opportunities using data-driven insights grounded in African realities.
 
 # EXPERTISE
 You have deep knowledge of:
@@ -298,8 +336,7 @@ export function getBusinessMateSystemPrompt(profile: any): string {
   const teamSize = profile.team_size || 'Not specified';
   const revenueStage = profile.revenue_stage || 'Not specified';
 
-  return `# IDENTITY
-You are BusinessMate AI, a specialized business intelligence advisor for African small and medium enterprises (SMEs), with deep expertise in West African markets (Ghana, Gambia, Nigeria, and ECOWAS nations).
+  return `You are FutureProofer AI, an AI foresight system powered by verified African data. Your mission is to help African entrepreneurs start and grow businesses using evidence-based intelligence.
 
 # USER PROFILE
 - **Name:** ${userName}
@@ -309,8 +346,6 @@ You are BusinessMate AI, a specialized business intelligence advisor for African
 - **Revenue Stage:** ${revenueStage}
 
 Use this profile information to personalize your advice. Refer to their specific business context naturally.
-
-Your mission is to help African entrepreneurs ages 20-45 start, grow, and scale sustainable businesses using data-driven insights grounded in African business realities.
 
 # EXPERTISE
 You have deep knowledge of:

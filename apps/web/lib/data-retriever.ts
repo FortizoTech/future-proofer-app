@@ -58,7 +58,9 @@ export async function retrieveContextData(
         *,
         source:data_sources(organization_name, website_url),
         country:countries(name),
-        sector:sectors(name)
+        sector:sectors(name),
+        source_url,
+        source_page_reference
       `)
             .eq('is_current', true)
             .order('year', { ascending: false })
@@ -87,7 +89,7 @@ export async function retrieveContextData(
           *,
           role:roles(title),
           country:countries(name, currency_code),
-          source:data_sources(organization_name)
+          source:data_sources(organization_name, website_url)
         `)
                 .eq('role_id', roleData.id)
                 .eq('country_id', countryId)
@@ -107,7 +109,7 @@ export async function retrieveContextData(
         *,
         country:countries(name),
         sector:sectors(name),
-        source:data_sources(organization_name)
+        source:data_sources(organization_name, website_url)
       `)
             .eq('is_current', true)
             .in('demand_level', ['HIGH', 'CRITICAL'])
@@ -129,7 +131,7 @@ export async function retrieveContextData(
         *,
         country:countries(name),
         sector:sectors(name),
-        source:data_sources(organization_name)
+        source:data_sources(organization_name, website_url)
       `)
             .eq('country_id', countryId)
             .eq('is_current', true)

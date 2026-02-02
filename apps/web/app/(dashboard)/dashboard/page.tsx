@@ -52,10 +52,30 @@ const ProfilePanel = ({ user, profile, onLogout }: { user: any, profile: any, on
         <h2 className="profile-name">
           {profile?.full_name || user?.user_metadata?.full_name || "Guest User"}
         </h2>
-        <p className="profile-role">
-          {profile?.mode === 'BUSINESS' ? (profile?.business_sector || 'Business Lead') : (profile?.skills?.[0] || 'Software Development')}<br />
-          {profile?.career_goal ? profile.career_goal.replace('_', ' ') : 'Full Stack Engineer'}
-        </p>
+        <div className="profile-role">
+          <div className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">
+            {profile?.mode === 'BUSINESS' ? 'Business Focus' : 'Expertise'}
+          </div>
+          <div className="skills-container">
+            {profile?.mode === 'BUSINESS' ? (
+              <span className="profile-skill-tag">{profile?.business_sector || 'Business Lead'}</span>
+            ) : (
+              <>
+                {(profile?.skills || ['Software Development']).slice(0, 3).map((skill: string, i: number) => (
+                  <span key={i} className="profile-skill-tag">{skill}</span>
+                ))}
+                {profile?.skills?.length > 3 && (
+                  <span className="profile-skill-tag" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
+                    +{profile.skills.length - 3} more
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+          <p className="mt-2 text-slate-400">
+            {profile?.career_goal ? profile.career_goal.replace(/_/g, ' ') : 'Full Stack Engineer'}
+          </p>
+        </div>
         <div className="profile-location">
           <span className="profile-location-icon">📍</span>
           <span>{profile?.country || 'Accra, Ghana'}</span>
@@ -234,10 +254,11 @@ export default function DashboardPage() {
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !authUser) {
-        console.log('Dashboard client-side auth check failed:', authError?.message || 'No user');
+        console.log('[DashboardPage] Redirecting to login because:', authError?.message || 'No user');
         router.push('/login');
         return;
       }
+      console.log('[DashboardPage] Auth success for:', authUser.email);
 
       setUser(authUser);
 

@@ -19,6 +19,7 @@ function LoginContent() {
     const searchParams = useSearchParams();
     const message = searchParams.get('message');
     const urlError = searchParams.get('error');
+    const next = searchParams.get('next');
     const mode = searchParams.get('mode');
 
     // Initialize error from URL if present
@@ -26,7 +27,24 @@ function LoginContent() {
         if (urlError) {
             setError(decodeURIComponent(urlError));
         }
-    }, [urlError]);
+
+        // Redirect to appropriate page if already logged in
+        const checkUser = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // If they are already logged in, respect the 'next' or 'mode' params
+                let redirectUrl = '/dashboard';
+                if (next) {
+                    redirectUrl = next;
+                } else if (mode) {
+                    redirectUrl = `/onboarding?mode=${mode}`;
+                }
+                router.push(redirectUrl);
+            }
+        };
+        checkUser();
+    }, [urlError, router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,12 +62,15 @@ function LoginContent() {
             if (error) {
                 setError(error.message);
             } else if (data.user) {
-                // If mode is present, redirect to onboarding step 2 with that mode
-                if (mode) {
-                    router.push(`/onboarding?mode=${mode}`);
-                } else {
-                    router.push('/dashboard');
+                // Determine redirect target
+                let redirectUrl = '/dashboard';
+                if (next) {
+                    redirectUrl = next;
+                } else if (mode) {
+                    redirectUrl = `/onboarding?mode=${mode}`;
                 }
+
+                router.push(redirectUrl);
             }
         } catch (err) {
             setError('An unexpected error occurred');
@@ -59,15 +80,39 @@ function LoginContent() {
     };
 
     const handleGoogleLogin = async () => {
-        const supabase = createClient();
-        const nextUrl = mode ? `/onboarding?mode=${mode}` : '/dashboard';
+        setIsLoading(true);
+        setError(null);
+        try {
+            const supabase = createClient();
+            let nextUrl = '/dashboard';
 
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
-            },
-        });
+            if (next) {
+                nextUrl = next;
+            } else if (mode) {
+                nextUrl = `/onboarding?mode=${mode}`;
+            }
+
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'select_account',
+                    },
+                },
+            });
+
+            if (error) {
+                console.error('Google login error:', error.message);
+                setError(`Google login failed: ${error.message}`);
+                setIsLoading(false);
+            }
+        } catch (err: any) {
+            console.error('Unexpected Google login error:', err);
+            setError('An unexpected error occurred during Google login');
+            setIsLoading(false);
+        }
     };
 
     return (

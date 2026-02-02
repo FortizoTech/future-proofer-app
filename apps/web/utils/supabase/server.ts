@@ -1,8 +1,7 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
 
-export async function createClient(response?: NextResponse) {
+export async function createClient() {
     const cookieStore = await cookies();
 
     return createServerClient(
@@ -10,45 +9,25 @@ export async function createClient(response?: NextResponse) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
+                getAll() {
+                    return cookieStore.getAll();
                 },
-                set(name: string, value: string, options: CookieOptions) {
+                setAll(cookiesToSet) {
                     try {
-                        const cookieOptions = { ...options };
-                        // Some environments/browsers have issues with partitioned cookies on localhost
-                        if (cookieOptions.partitioned) delete cookieOptions.partitioned;
-
-                        // Force permissive settings for local development
-                        cookieOptions.secure = false;
-                        cookieOptions.sameSite = 'lax';
-
-                        console.log(`[Supabase Server] Setting cookie: ${name}`);
-
-                        cookieStore.set({ name, value, ...cookieOptions });
-                        if (response) {
-                            response.cookies.set({ name, value, ...cookieOptions });
-                        }
+                        cookiesToSet.forEach(({ name, value, options }) =>
+                            cookieStore.set(name, value, {
+                                ...options,
+                                // Force insecure on localhost to avoid "secure cookie on http" rejection
+                                secure: process.env.NODE_ENV === 'production',
+                                // Ensure the path is root so it applies to the dashboard
+                                path: '/',
+                                // Explicitly set SameSite to lax for navigation continuity
+                                sameSite: 'lax',
+                            })
+                        );
                     } catch (error) {
-                        // The `set` method was called from a Server Component.
-                    }
-                },
-                remove(name: string, options: CookieOptions) {
-                    try {
-                        const cookieOptions = { ...options };
-                        if (cookieOptions.partitioned) delete cookieOptions.partitioned;
-
-                        cookieOptions.secure = false;
-                        cookieOptions.sameSite = 'lax';
-
-                        console.log(`[Supabase Server] Removing cookie: ${name}`);
-
-                        cookieStore.set({ name, value: '', ...cookieOptions });
-                        if (response) {
-                            response.cookies.set({ name, value: '', ...cookieOptions });
-                        }
-                    } catch (error) {
-                        // The `delete` method was called from a Server Component.
+                        // This 'try/catch' ignores the error if called from a Server Component
+                        // which is expected behavior in Next.js
                     }
                 },
             },

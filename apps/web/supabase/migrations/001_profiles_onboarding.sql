@@ -16,6 +16,8 @@ CREATE TABLE public.profiles (
   -- Basic Info (Step 4: Finalize Identity)
   email TEXT,
   full_name TEXT,
+  avatar_url TEXT,
+  country TEXT,
   
   -- Step 1: Mode Selection - 'CAREER' or 'BUSINESS'
   mode TEXT CHECK (mode IN ('CAREER', 'BUSINESS')),
@@ -105,11 +107,12 @@ CREATE TRIGGER on_profile_updated
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name)
+  INSERT INTO public.profiles (id, email, full_name, avatar_url)
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name'
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
   );
   RETURN NEW;
 END;

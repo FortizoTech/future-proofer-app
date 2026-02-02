@@ -36,13 +36,31 @@ export default function SignupPage() {
     };
 
     const handleGoogleLogin = async () => {
-        const supabase = createClient();
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
-            },
-        });
+        setIsLoading(true);
+        setError(null);
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'select_account',
+                    },
+                },
+            });
+
+            if (error) {
+                console.error('Google signup error:', error.message);
+                setError(`Google signup failed: ${error.message}`);
+                setIsLoading(false);
+            }
+        } catch (err: any) {
+            console.error('Unexpected Google signup error:', err);
+            setError('An unexpected error occurred during Google signup');
+            setIsLoading(false);
+        }
     };
 
     return (

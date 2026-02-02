@@ -89,7 +89,7 @@ export default function Navbar() {
                         Login
                         <span className="navbar-link-underline" />
                     </Link>
-                    <Link href="/onboarding">
+                    <Link href="/login">
                         <button className="navbar-launch-btn">
                             Launch App
                         </button>
