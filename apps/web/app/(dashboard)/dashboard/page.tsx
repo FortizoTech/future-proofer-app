@@ -17,6 +17,14 @@ import ModeToggle from '@/components/dashboard/ModeToggle';
 import IntelligenceSnapshot from '@/components/dashboard/IntelligenceSnapshot';
 import { DashboardMetrics, DEFAULT_CAREER_METRICS, DEFAULT_BUSINESS_METRICS } from '@/lib/types/dashboard-metrics';
 
+// Mobile Components
+import MobileHeader from '@/components/dashboard/MobileHeader';
+import MobileModeToggle from '@/components/dashboard/MobileModeToggle';
+import MobileUserCard from '@/components/dashboard/MobileUserCard';
+import AIAssistantCard from '@/components/dashboard/AIAssistantCard';
+import MobileReadinessScore from '@/components/dashboard/MobileReadinessScore';
+import MobileSidebar from '@/components/dashboard/MobileSidebar';
+
 // ============================================
 // TYPES
 // ============================================
@@ -156,6 +164,7 @@ export default function DashboardPage() {
   const [isDarkMode, setIsDarkMode] = useState(false); // Light Mode by default per request
 
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Load theme preference
   useEffect(() => {
@@ -756,6 +765,97 @@ export default function DashboardPage() {
 
         {/* Right Panel: Intelligence Snapshot */}
         <IntelligenceSnapshot metrics={dashboardMetrics} />
+
+        {/* ============================================
+           MOBILE LAYOUT
+           ============================================ */}
+
+        {/* Mobile Header */}
+        <MobileHeader isDarkMode={isDarkMode} onMenuClick={() => setIsSidebarOpen(true)} />
+
+        {/* Mobile Mode Toggle */}
+        <MobileModeToggle />
+
+        {/* Mobile Main Content Area */}
+        <div className="mobile-main-content">
+          {/* Mobile User Card */}
+          <MobileUserCard user={user} profile={profile} />
+
+          {/* AI Assistant Card */}
+          <AIAssistantCard
+            mode={profile?.mode || 'CAREER'}
+            content={messages[messages.length - 1]?.content || ''}
+            suggestions={suggestions}
+            onSuggestionClick={(suggestion) => {
+              setInputValue(suggestion);
+            }}
+          />
+
+          {/* Mobile Readiness Score */}
+          <MobileReadinessScore
+            mode={profile?.mode || 'CAREER'}
+            overallScore={
+              dashboardMetrics?.mode === 'BUSINESS'
+                ? dashboardMetrics?.venture_readiness?.overall_score || 0
+                : (dashboardMetrics as any)?.career_readiness?.overall_score || 0
+            }
+            breakdown={
+              dashboardMetrics?.mode === 'BUSINESS'
+                ? [
+                  { label: 'Market-Solution Fit', value: dashboardMetrics?.venture_readiness?.breakdown?.market_demand_fit || 0, color: '#ef4444' },
+                  { label: 'Execution Capability', value: dashboardMetrics?.venture_readiness?.breakdown?.execution_readiness || 0, color: '#f59e0b' },
+                  { label: 'Regulatory Compliance', value: dashboardMetrics?.venture_readiness?.breakdown?.business_fundamentals || 0, color: '#eab308' },
+                  { label: 'Growth Potential', value: dashboardMetrics?.venture_readiness?.breakdown?.founder_capability || 0, color: '#f59e0b' },
+                ]
+                : [
+                  { label: 'Skills Match', value: (dashboardMetrics as any)?.career_readiness?.breakdown?.skills_match || 0, color: '#3b82f6' },
+                  { label: 'Market Alignment', value: (dashboardMetrics as any)?.career_readiness?.breakdown?.market_alignment || 0, color: '#3b82f6' },
+                  { label: 'Profile Strength', value: (dashboardMetrics as any)?.career_readiness?.breakdown?.profile_strength || 0, color: '#3b82f6' },
+                  { label: 'Opportunity Readiness', value: (dashboardMetrics as any)?.career_readiness?.breakdown?.opportunity_readiness || 0, color: '#3b82f6' },
+                ]
+            }
+          />
+        </div>
+
+        {/* Mobile Chat Footer */}
+        <div className="mobile-chat-footer">
+          <div className="mobile-chat-container">
+            <input
+              type="text"
+              className="mobile-chat-input"
+              placeholder={profile?.mode === 'BUSINESS' ? 'Ask BusinessDesk...' : 'Ask CareerMate...'}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button className="mobile-chat-btn" onClick={startRecording}>
+              <Mic size={20} />
+            </button>
+            <button
+              className="mobile-chat-btn primary"
+              onClick={() => handleSendMessage()}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Sidebar */}
+        <MobileSidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          user={user}
+          profile={profile}
+          isDarkMode={isDarkMode}
+          onModeChange={(mode) => {
+            // Mode change is handled by MobileSidebar through database update
+            window.location.reload();
+          }}
+          onNavigate={(route) => {
+            router.push(route);
+          }}
+        />
 
       </div>
     </div>
