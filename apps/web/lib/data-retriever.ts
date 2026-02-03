@@ -13,6 +13,10 @@ export interface RetrievedData {
     salaryData: any[];
     skillsDemand: any[];
     businessEnvironment: any[];
+    jobMarketSignals: any[];
+    learningPathways: any[];
+    startupEcosystemSignals: any[];
+    policyAlerts: any[];
     sources: any[];
 }
 
@@ -25,6 +29,10 @@ export async function retrieveContextData(
         salaryData: [],
         skillsDemand: [],
         businessEnvironment: [],
+        jobMarketSignals: [],
+        learningPathways: [],
+        startupEcosystemSignals: [],
+        policyAlerts: [],
         sources: []
     };
 
@@ -56,7 +64,7 @@ export async function retrieveContextData(
             .from('market_insights')
             .select(`
         *,
-        source:data_sources(organization_name, website_url),
+        source:data_sources(organization_name, website_url, credibility_rating),
         country:countries(name),
         sector:sectors(name),
         source_url,
@@ -89,7 +97,7 @@ export async function retrieveContextData(
           *,
           role:roles(title),
           country:countries(name, currency_code),
-          source:data_sources(organization_name, website_url)
+          source:data_sources(organization_name, website_url, credibility_rating)
         `)
                 .eq('role_id', roleData.id)
                 .eq('country_id', countryId)
@@ -109,7 +117,7 @@ export async function retrieveContextData(
         *,
         country:countries(name),
         sector:sectors(name),
-        source:data_sources(organization_name, website_url)
+        source:data_sources(organization_name, website_url, credibility_rating)
       `)
             .eq('is_current', true)
             .in('demand_level', ['HIGH', 'CRITICAL'])
@@ -131,7 +139,7 @@ export async function retrieveContextData(
         *,
         country:countries(name),
         sector:sectors(name),
-        source:data_sources(organization_name, website_url)
+        source:data_sources(organization_name, website_url, credibility_rating)
       `)
             .eq('country_id', countryId)
             .eq('is_current', true)
@@ -141,14 +149,111 @@ export async function retrieveContextData(
         if (bizEnv) data.businessEnvironment = bizEnv;
     }
 
-    // 5. Collect all unique sources
+    // 5. Retrieve Job Market Signals
+    if (countryId || sectorId) {
+        let query = supabaseClient
+            .from('job_market_signals')
+            .select(`
+        *,
+        country:countries(name),
+        sector:sectors(name),
+        source:data_sources(organization_name, website_url, credibility_rating),
+        source_url,
+        source_page_reference
+      `)
+            .eq('is_current', true)
+            .order('captured_at', { ascending: false })
+            .limit(5);
+
+        if (countryId) query = query.eq('country_id', countryId);
+        if (sectorId) query = query.eq('sector_id', sectorId);
+
+        const { data: signals, error } = await query;
+        if (signals && !error) data.jobMarketSignals = signals;
+    }
+
+    // 6. Retrieve Learning Pathways (for skill gaps)
+    if (context.skills && context.skills.length > 0) {
+        const skillTargets = context.skills.slice(0, 3); // Limit to first 3 skills
+        const { data: pathways, error } = await supabaseClient
+            .from('learning_pathways')
+            .select(`
+        *,
+        country:countries(name),
+        source:data_sources(organization_name, website_url, credibility_rating),
+        source_url
+      `)
+            .eq('is_current', true)
+            .or(skillTargets.map((s: string) => `skill_target.ilike.%${s}%`).join(','))
+            .order('credibility_rating', { ascending: false })
+            .limit(5);
+
+        if (pathways && !error) data.learningPathways = pathways;
+    }
+
+    // 7. Retrieve Startup Ecosystem Signals (for Business Mode)
+    if (context.intent === 'business_strategy' && (countryId || sectorId)) {
+        let query = supabaseClient
+            .from('startup_ecosystem_signals')
+            .select(`
+        *,
+        country:countries(name),
+        sector:sectors(name),
+        source:data_sources(organization_name, website_url, credibility_rating),
+        source_url,
+        source_page_reference
+      `)
+            .eq('is_current', true)
+            .order('year', { ascending: false })
+            .limit(5);
+
+        if (countryId) query = query.eq('country_id', countryId);
+        if (sectorId) query = query.eq('sector_id', sectorId);
+
+        const { data: ecosystemSignals, error } = await query;
+        if (ecosystemSignals && !error) data.startupEcosystemSignals = ecosystemSignals;
+    }
+
+    // 8. Retrieve Policy Alerts
+    if (countryId) {
+        let query = supabaseClient
+            .from('policy_opportunity_alerts')
+            .select(`
+        *,
+        country:countries(name),
+        sector:sectors(name),
+        source:data_sources(organization_name, website_url, credibility_rating),
+        source_url,
+        source_page_reference
+      `)
+            .eq('is_current', true)
+            .eq('country_id', countryId)
+            .order('effective_date', { ascending: false })
+            .limit(3);
+
+        if (sectorId) query = query.eq('sector_id', sectorId);
+
+        const { data: policies, error } = await query;
+        if (policies && !error) data.policyAlerts = policies;
+    }
+
+    // 9. Collect all unique sources
     const allSources = new Set();
-    [...data.marketInsights, ...data.salaryData, ...data.skillsDemand, ...data.businessEnvironment]
-        .forEach(item => {
-            if (item.source) allSources.add(JSON.stringify(item.source));
-        });
+    [
+        ...data.marketInsights,
+        ...data.salaryData,
+        ...data.skillsDemand,
+        ...data.businessEnvironment,
+        ...data.jobMarketSignals,
+        ...data.learningPathways,
+        ...data.startupEcosystemSignals,
+        ...data.policyAlerts
+    ].forEach(item => {
+        if (item.source) allSources.add(JSON.stringify(item.source));
+    });
 
     data.sources = Array.from(allSources).map(s => JSON.parse(s as string));
 
     return data;
 }
+

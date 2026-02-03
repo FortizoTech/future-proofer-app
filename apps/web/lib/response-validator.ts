@@ -1,5 +1,19 @@
 import { RetrievedData } from './data-retriever';
 
+export function purifyMarkdown(text: string): string {
+    if (typeof text !== 'string') return text;
+    // Remove bold, italic, and other markdown symbols but keep the text
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Bold
+        .replace(/\*(.*?)\*/g, '$1')     // Italic
+        .replace(/__(.*?)__/g, '$1')     // Underline-style
+        .replace(/_(.*?)_/g, '$1')       // Italic-style
+        .replace(/`(.*?)`/g, '$1')       // Code
+        .replace(/#+\s+(.*)/g, '$1')     // Headings
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Links (just keep label)
+        .replace(/^\s*[\*•\-]\s+/gm, ''); // Bullet points
+}
+
 export function validateAIResponse(
     response: string,
     retrievedData: RetrievedData

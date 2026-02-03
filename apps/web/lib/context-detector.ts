@@ -2,6 +2,7 @@ export interface DetectedContext {
     country?: string;
     sector?: string;
     role?: string;
+    skills?: string[];
     intent: 'career_planning' | 'skill_advice' | 'business_strategy' | 'market_research' | 'general';
     keywords: string[];
 }
@@ -77,10 +78,14 @@ export function detectContext(userMessage: string, userProfile: any): DetectedCo
         intent = 'market_research';
     }
 
+    // 5. Extract skills from user profile
+    const skills: string[] = userProfile?.skills || [];
+
     return {
         country,
         sector,
         role,
+        skills,
         intent,
         keywords: message.split(' ').filter(word => word.length > 3)
     };

@@ -510,6 +510,10 @@ function OnboardingContent() {
                                                 </div>
                                             </button>
                                         </div>
+
+                                        <p className="text-center text-slate-500 text-sm mt-6">
+                                            Multi-talented? Don't worry—you can activate Dual Mode and switch views from your dashboard later.
+                                        </p>
                                     </div>
                                 )}
 

@@ -4,7 +4,7 @@ import openai from '@/lib/openai';
 import { detectContext } from '@/lib/context-detector';
 import { retrieveContextData } from '@/lib/data-retriever';
 import { buildPrompt } from '@/lib/prompt-builder';
-import { validateAIResponse } from '@/lib/response-validator';
+import { validateAIResponse, purifyMarkdown } from '@/lib/response-validator';
 
 export async function POST(req: NextRequest) {
     try {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         console.log('[Chat API] Auth check result:', { user: !!user, error: !!authError });
 
         if (authError || !user) {
-            console.log('[Chat API] Authentication failed:', authError);
+            console.error('[Chat API] Authentication failed or user missing:', { authError, user: !!user });
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -100,18 +100,25 @@ export async function POST(req: NextRequest) {
                 salaryData: [],
                 skillsDemand: [],
                 businessEnvironment: [],
+                jobMarketSignals: [],
+                learningPathways: [],
+                startupEcosystemSignals: [],
+                policyAlerts: [],
                 sources: []
             };
         }
 
         // 7. PROMPT CONSTRUCTION
+        const isFirstAssessment = !conversationHistory || conversationHistory.length === 0;
+
         const { systemPrompt, userMessage } = buildPrompt(
             message,
             retrievedData,
             profile.mode as 'CAREER' | 'BUSINESS',
             context,
             profile,
-            attachments
+            attachments,
+            isFirstAssessment
         );
 
         // 8. CALL OPENAI API
@@ -124,7 +131,7 @@ export async function POST(req: NextRequest) {
         }
 
         const completion = await openai.chat.completions.create({
-            model: 'llama-3.3-70b-versatile', // High-performance Llama 3 model on Groq
+            model: 'llama-3.1-8b-instant', // Lower TPD usage than 70b, higher limits
             messages: [
                 { role: 'system', content: systemPrompt },
                 ...(conversationHistory || []).map((msg: any) => ({
@@ -139,6 +146,7 @@ export async function POST(req: NextRequest) {
         });
 
         const rawResponse = completion.choices?.[0]?.message?.content ?? '{}';
+        console.log('[Chat API] Raw AI response received. Length:', rawResponse.length);
         let structuredResponse: any;
 
         try {
@@ -153,14 +161,30 @@ export async function POST(req: NextRequest) {
             };
         }
 
-        // 9. RESPONSE VALIDATION
+        // 9. PURIFY MARKDOWN FROM AI RESPONSE
+        if (structuredResponse.chat_insight) {
+            const ci = structuredResponse.chat_insight;
+            if (ci.understanding_confirmation) ci.understanding_confirmation = purifyMarkdown(ci.understanding_confirmation);
+            if (ci.market_reality_check) ci.market_reality_check = purifyMarkdown(ci.market_reality_check);
+            if (ci.core_opportunity_signal) ci.core_opportunity_signal = purifyMarkdown(ci.core_opportunity_signal);
+            if (ci.next_step_primer) ci.next_step_primer = purifyMarkdown(ci.next_step_primer);
+            if (ci.fastest_opportunity_signal) ci.fastest_opportunity_signal = purifyMarkdown(ci.fastest_opportunity_signal);
+            if (Array.isArray(ci.strongest_skill_cluster)) {
+                ci.strongest_skill_cluster = ci.strongest_skill_cluster.map((s: string) => purifyMarkdown(s));
+            }
+            if (Array.isArray(ci.primary_skill_gaps)) {
+                ci.primary_skill_gaps = ci.primary_skill_gaps.map((s: string) => purifyMarkdown(s));
+            }
+        }
+
+        // 10. RESPONSE VALIDATION
         const validation = validateAIResponse(rawResponse, retrievedData);
 
         if (!validation.isValid) {
             console.warn('AI response validation issues:', validation.issues);
         }
 
-        // 10. LOG INTERACTION
+        // 11. LOG INTERACTION
         try {
             await logInteraction({
                 userId: user.id,
@@ -175,7 +199,7 @@ export async function POST(req: NextRequest) {
             console.error('Failed to log interaction:', logError);
         }
 
-        // 11. RETURN RESPONSE
+        // 12. RETURN RESPONSE
         return NextResponse.json({
             ...structuredResponse,
             sources: retrievedData.sources, // Keep original sources for backward compatibility or UI use

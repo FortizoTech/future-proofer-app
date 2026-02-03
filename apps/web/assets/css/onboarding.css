@@ -881,6 +881,46 @@
     background: #94a3b8;
 }
 
+/* --- SIDE-BY-SIDE LAYOUT (Career Goals) --- */
+.onboarding-goal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    align-items: stretch;
+}
+
+.onboarding-goal-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.onboarding-goal-input-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.onboarding-goal-textarea {
+    flex-grow: 1;
+    width: 100%;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    font-size: 0.875rem;
+    color: #1e293b;
+    resize: none;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.onboarding-goal-textarea:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
 /* --- RESPONSIVE --- */
 @media (max-width: 640px) {
     .onboarding-card {

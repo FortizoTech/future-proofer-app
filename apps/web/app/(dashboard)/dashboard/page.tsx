@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 import Head from 'next/head';
-import { WelcomeModal } from '@/components/WelcomeModal';
+
 import MapBackground from '@/components/ui/MapBackground';
 import '@/assets/css/dashboard.css';
 import { MentorshipRequestModal, type MentorshipProfile } from '@/components/mentorship/MentorshipRequestModal';
@@ -13,6 +13,9 @@ import { Mic, Paperclip, Send, Settings, User, LogOut, FileText, CheckCircle, Pl
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import '@/assets/css/chat-features.css';
+import ModeToggle from '@/components/dashboard/ModeToggle';
+import IntelligenceSnapshot from '@/components/dashboard/IntelligenceSnapshot';
+import { DashboardMetrics, DEFAULT_CAREER_METRICS, DEFAULT_BUSINESS_METRICS } from '@/lib/types/dashboard-metrics';
 
 // ============================================
 // TYPES
@@ -100,6 +103,11 @@ const ProfilePanel = ({ user, profile, onLogout, isDarkMode, toggleTheme }: { us
             </div>
           </div>
         </div>
+
+        {/* Mode Toggle - Directly in sidebar */}
+        <div className="px-4 py-3 border-t border-slate-200 dark:border-white/10">
+          <ModeToggle />
+        </div>
       </div>
 
       {/* Sticky Bottom Actions */}
@@ -135,130 +143,19 @@ const ProfilePanel = ({ user, profile, onLogout, isDarkMode, toggleTheme }: { us
 };
 
 // ============================================
-// COMPONENT: WIDGETS PANEL (RIGHT)
-// ============================================
-const WidgetsPanel = ({ profile }: { profile: any }) => {
-  const currentSkill = profile?.skills?.[0] || "Full Stack Development";
-  const currentCountry = profile?.country || "West Africa";
-
-  return (
-    <div className="glass-panel widgets-panel flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto no-scrollbar pr-1">
-        {/* Date Display */}
-        <div className="widget-date">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-
-        {/* Readiness Score */}
-        <div className="score-widget">
-          <div className="score-title">Overall Readiness Score</div>
-          <div className="score-circle">
-            <svg className="score-svg" viewBox="0 0 100 100">
-              <circle className="score-track" cx="50" cy="50" r="45" />
-              <circle
-                className="score-value-path"
-                cx="50"
-                cy="50"
-                r="45"
-                strokeDasharray="283"
-                strokeDashoffset="93" // 67%
-              />
-            </svg>
-            <div className="score-content">
-              <div className="score-number">67%</div>
-              <div className="score-label">Complete</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Next Actions */}
-        <div className="actions-widget">
-          <div className="widget-header">
-            <h3 className="widget-title">Next Actions</h3>
-          </div>
-          <div className="action-list">
-            <div className="action-item">
-              <CheckCircle size={16} className="action-check" />
-              <span>Complete your profile</span>
-            </div>
-            <div className="action-item">
-              <CheckCircle size={16} className="action-check" />
-              <span>Connect your calendar</span>
-            </div>
-            <div className="action-item">
-              <div className="w-4 h-4 rounded-full border-2 border-blue-400 mt-0.5 flex-shrink-0" />
-              <span>Join Me {currentCountry} Tech Forum</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Skill Demand Metric Widget */}
-        <div className="actions-widget" style={{ padding: '1rem', background: 'rgba(34, 197, 94, 0.05)', borderColor: 'rgba(34, 197, 94, 0.1)' }}>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={18} className="text-green-400" />
-            <h3 className="widget-title" style={{ fontSize: '0.85rem' }}>Skill Demand in {currentCountry}</h3>
-          </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between items-center text-xs text-gray-400">
-              <div className="flex flex-col">
-                <span className="font-bold text-white mb-1">{currentSkill}</span>
-                <span className="text-[10px] text-gray-400 max-w-[180px] leading-tight mb-2">
-                  {currentSkill.toLowerCase().includes('software') ? 'Design, development, and maintenance of modular software systems.' :
-                    currentSkill.toLowerCase().includes('data') ? 'Extracting actionable insights from complex datasets to drive business decisions.' :
-                      currentSkill.toLowerCase().includes('cloud') ? 'Deploying and managing scalable infrastructure on distributed networks.' :
-                        currentSkill.toLowerCase().includes('cyber') ? 'Protecting critical digital assets and networks from unauthorized access.' :
-                          'Developing specialized expertise to maintain competitive edge in the local tech market.'}
-                </span>
-              </div>
-              <span className="text-green-400 font-bold self-start mt-1">82%</span>
-            </div>
-            <div className="w-full h-1 bg-gray-700 rounded-full mt-1">
-              <div className="h-full bg-green-500 rounded-full" style={{ width: '82%' }}></div>
-            </div>
-            <p className="text-[10px] text-gray-500 mt-2">
-              AI analysis shows a 15% increase in demand for your skillset in {profile?.country ? profile.country : 'Lagos and Accra'} this month.
-            </p>
-          </div>
-        </div>
-
-        {/* Media / Get Wants (Small Placeholder) */}
-        <div className="media-widget" style={{ opacity: 0.6, transform: 'scale(0.9)', transformOrigin: 'right' }}>
-          <div className="media-cover">
-            <div className="w-full h-full bg-slate-700 flex items-center justify-center">
-              <Sparkles size={16} className="text-slate-500" />
-            </div>
-          </div>
-          <div className="media-info">
-            <div className="media-title">Resources</div>
-            <div className="media-subtitle">Architecture Series</div>
-          </div>
-        </div>
-      </div>
-
-      {/* WhatsApp Support Button at the bottom of Right Bar */}
-      <div className="mt-auto pt-6">
-        <button className="support-btn-sticky" onClick={() => window.open('https://wa.me/2202350530', '_blank')}>
-          <MessageCircle size={15} fill="currentColor" />
-          Support
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
 // MAIN PAGE COMPONENT
 // ============================================
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // Light Mode by default per request
-  const [aiGreetingInsight, setAiGreetingInsight] = useState<string>("");
+
+  const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
 
   // Load theme preference
   useEffect(() => {
@@ -326,75 +223,132 @@ export default function DashboardPage() {
 
       if (profileData) {
         setProfile(profileData);
+        setDashboardMetrics(profileData.mode === 'BUSINESS' ? DEFAULT_BUSINESS_METRICS : DEFAULT_CAREER_METRICS);
 
-        // Fetch AI-generated Professional Greeting
+        // Fetch AI-generated Analysis
         try {
+          const isBusiness = profileData.mode === 'BUSINESS';
+          const initialPrompt = isBusiness
+            ? "Analyze my business venture potential and market fit."
+            : "Analyze my profile and provide your initial career assessment.";
+
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (!session) {
+            console.warn('[DashboardPage] No session found for initial AI fetch, proceeding with cookies only');
+          }
+
           const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+            },
             body: JSON.stringify({
-              message: "Hi! Please give me a professional welcome and a brief insight based on my profile.",
+              message: initialPrompt,
               conversationHistory: [],
             })
           });
 
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[DashboardPage] AI fetch failed with status ${response.status}:`, errorText);
+            throw new Error(`AI API failed: ${response.status}`);
+          }
+
           if (response.ok) {
             const data = await response.json();
-            // Handle structured response
-            let aiContent = "";
-            if (data.sections && data.sections.length > 0) {
-              // Extract the first paragraph or summary
-              const mainSection = data.sections.find((s: any) => s.type === 'paragraph');
-              aiContent = mainSection ? mainSection.text : "Welcome! I'm ready to help you thrive in the African tech ecosystem.";
 
-              // If there's a second paragraph or specific insight type, use it for the modal
-              const insightSection = data.sections.find((s: any) => s.type === 'insight' || s.intent === 'statistic');
-              if (insightSection) {
-                setAiGreetingInsight(insightSection.text);
-              } else if (data.sections.length > 1) {
-                setAiGreetingInsight(data.sections[1].text);
+            // Handle new response format with chat_insight and dashboard_metrics
+            if (data.chat_insight && data.dashboard_metrics) {
+              const insight = data.chat_insight;
+              let aiContent = "";
+
+              if (isBusiness) {
+                // BUSINESS FORMAT
+                aiContent = `Based on your business profile, market context, and regional conditions, here is what matters most right now:\n\n`;
+                aiContent += `${insight.understanding_confirmation}\n\n`;
+                if (insight.market_reality_check) aiContent += `MARKET REALITY CHECK:\n${insight.market_reality_check}\n\n`;
+                if (insight.core_opportunity_signal) aiContent += `CORE OPPORTUNITY SIGNAL:\n${insight.core_opportunity_signal}\n\n`;
+              } else {
+                // CAREER FORMAT
+                aiContent = `Based on your profile, skills, and the current ${profileData.country || 'African'}-specific job market, here is what matters most right now:\n\n`;
+                aiContent += `${insight.understanding_confirmation}\n\n`;
+                if (insight.strongest_skill_cluster?.length) {
+                  aiContent += `STRONGEST SKILL CLUSTER:\n` + insight.strongest_skill_cluster.map((s: string) => `  ${s}`).join('\n') + `\n\n`;
+                }
+                if (insight.primary_skill_gaps?.length) {
+                  aiContent += `PRIMARY SKILL GAPS:\n` + insight.primary_skill_gaps.map((s: string) => `  ${s}`).join('\n') + `\n\n`;
+                }
+                if (insight.fastest_opportunity_signal) {
+                  aiContent += `FASTEST OPPORTUNITY SIGNAL:\n${insight.fastest_opportunity_signal}\n\n`;
+                }
               }
+
+              if (insight.next_step_primer) {
+                aiContent += insight.next_step_primer;
+              }
+
+              setMessages([{
+                role: 'ai',
+                content: aiContent
+              }]);
+
+              // Set dashboard metrics for the Intelligence Snapshot sidebar
+              setDashboardMetrics(data.dashboard_metrics);
+
+
+            } else if (data.sections && data.sections.length > 0) {
+              // Fallback to old format handling
+              const mainSection = data.sections.find((s: any) => s.type === 'paragraph');
+              const aiContent = mainSection ? mainSection.text : "I'm analyzing your career positioning in the African tech market.";
+
+              setMessages([{
+                role: 'ai',
+                content: aiContent
+              }]);
             } else {
-              aiContent = "Welcome! I've analyzed your profile and I'm ready to help you navigate your career journey in Africa.";
+              setMessages([{
+                role: 'ai',
+                content: "I've analyzed your profile. Ready to help you navigate your career journey in Africa."
+              }]);
             }
-
-            setMessages([{
-              role: 'ai',
-              content: aiContent
-            }]);
-
-            // If there's high-level insights, maybe set them elsewhere?
-            // For now, just the greeting.
           } else {
             throw new Error('Fallback to static');
           }
         } catch (error) {
-          // Fallback to a cleaner static greeting if API fails
+          console.error('AI fetch error:', error);
           setMessages([
             {
               role: 'ai',
-              content: `Hello ${profileData.full_name?.split(' ')[0] || 'there'}! I've analyzed the tech ecosystem in ${profileData.country || 'your region'}. Let's work on achieving your goal of becoming a skilled professional.`
+              content: `Based on your profile in ${profileData.country || 'Africa'}, I'm ready to help you accelerate your career. Ask me about skill gaps, learning paths, or profile optimization.`
             }
           ]);
+          setDashboardMetrics(profileData.mode === 'BUSINESS' ? DEFAULT_BUSINESS_METRICS : DEFAULT_CAREER_METRICS);
         }
+      }
 
-        // Dynamic Initial Suggestions
+      // Dynamic Initial Suggestions
+      if (profileData.mode === 'BUSINESS') {
+        setSuggestions([
+          "Analyze my business viability",
+          "Identify market risks",
+          "Funding opportunities"
+        ]);
+      } else {
         setSuggestions([
           "Analyze my skill gaps",
           "Suggested learning paths",
           "Optimize my profile"
         ]);
-
-        // Check for first visit (one-time modal)
-        const hasSeenWelcome = localStorage.getItem(`hasSeenWelcome_${authUser.id}`);
-        if (!hasSeenWelcome) {
-          setIsWelcomeOpen(true);
-          localStorage.setItem(`hasSeenWelcome_${authUser.id}`, 'true');
-        }
       }
+
+
     };
+
     checkUser();
   }, [router, supabase]);
+
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -405,6 +359,7 @@ export default function DashboardPage() {
     await supabase.auth.signOut();
     router.push('/');
   };
+
 
   const handleSendMessage = async (textOverride?: string) => {
     const finalMessage = textOverride || inputValue;
@@ -467,17 +422,45 @@ export default function DashboardPage() {
 
       const aiData = await res.json();
 
-      // ... handle AI response (rest of function)
-
-      // Handle structured JSON response
+      // Handle new response format with chat_insight and dashboard_metrics
       let displayContent = '';
-      if (aiData.sections) {
-        // Convert structured response to readable text for display
+
+      if (aiData.chat_insight && aiData.dashboard_metrics) {
+        const insight = aiData.chat_insight;
+        const isBusiness = aiData.dashboard_metrics.mode === 'BUSINESS';
+
+        displayContent = `${insight.understanding_confirmation}\n\n`;
+
+        if (isBusiness) {
+          // BUSINESS FIELDS
+          if (insight.market_reality_check) displayContent += `MARKET REALITY CHECK:\n${insight.market_reality_check}\n\n`;
+          if (insight.core_opportunity_signal) displayContent += `CORE OPPORTUNITY SIGNAL:\n${insight.core_opportunity_signal}\n\n`;
+        } else {
+          // CAREER FIELDS
+          if (insight.strongest_skill_cluster?.length > 0) {
+            displayContent += `STRONGEST SKILL CLUSTER:\n` + insight.strongest_skill_cluster.map((s: string) => `  ${s}`).join('\n') + `\n\n`;
+          }
+          if (insight.primary_skill_gaps?.length > 0) {
+            displayContent += `PRIMARY SKILL GAPS:\n` + insight.primary_skill_gaps.map((s: string) => `  ${s}`).join('\n') + `\n\n`;
+          }
+          if (insight.fastest_opportunity_signal) {
+            displayContent += `FASTEST OPPORTUNITY SIGNAL:\n${insight.fastest_opportunity_signal}\n\n`;
+          }
+        }
+
+        if (insight.next_step_primer) {
+          displayContent += insight.next_step_primer;
+        }
+
+        // Update dashboard metrics
+        setDashboardMetrics(aiData.dashboard_metrics);
+      } else if (aiData.sections) {
+        // Fallback to old structured response format
         aiData.sections.forEach((section: any) => {
           if (section.type === 'paragraph') {
             displayContent += section.text + '\n\n';
           } else if (section.type === 'heading') {
-            displayContent += section.text + '\n\n';
+            displayContent += `**${section.text}**\n\n`;
           } else if (section.type === 'list' && section.items) {
             section.items.forEach((item: any) => {
               displayContent += `• ${item.title}: ${item.description}\n`;
@@ -499,11 +482,20 @@ export default function DashboardPage() {
         setSuggestions(aiData.next_questions.items.map((q: any) => q.text).slice(0, 3));
       } else {
         // Fallback suggestions
-        setSuggestions([
-          "Tell me more about this",
-          "What's the next step?",
-          "How can I get started?"
-        ]);
+        const isBusinessMode = dashboardMetrics?.mode === 'BUSINESS' || profile?.mode === 'BUSINESS';
+        if (isBusinessMode) {
+          setSuggestions([
+            "Analyze my business viability",
+            "Identify market risks",
+            "Funding opportunities"
+          ]);
+        } else {
+          setSuggestions([
+            "Analyze my skill gaps",
+            "Suggested learning paths",
+            "Optimize my profile"
+          ]);
+        }
       }
 
       setIsLoading(false);
@@ -517,7 +509,12 @@ export default function DashboardPage() {
         content: fallbackResponse
       }]);
 
-      setSuggestions([
+      const isBusinessMode = dashboardMetrics?.mode === 'BUSINESS' || profile?.mode === 'BUSINESS';
+      setSuggestions(isBusinessMode ? [
+        "Analyze my business viability",
+        "Identify market risks",
+        "Funding opportunities"
+      ] : [
         "Try asking again",
         "Contact support",
         "Check my profile"
@@ -534,46 +531,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (profile?.mode === 'BUSINESS') {
-    return (
-      <div className={`dashboard-container ${!isDarkMode ? 'light-theme' : ''}`}>
-        <Head>
-          <title>Thnkforge - BusinessMate Coming Soon</title>
-        </Head>
-        <div className="glass-layout flex items-center justify-center p-8">
-          <div className="glass-panel p-12 text-center max-w-2xl border border-blue-500/20 shadow-2xl shadow-blue-500/10">
-            <div className="w-20 h-20 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-8 animate-pulse border border-blue-500/30">
-              <Rocket size={40} className="text-blue-400" />
-            </div>
-            <h1 className="text-4xl font-bold text-white mb-6 tracking-tight">BusinessMate AI</h1>
-            <div className="inline-flex items-center gap-2 px-4 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-semibold mb-8 border border-blue-500/30">
-              <Sparkles size={14} />
-              PREMIUM UPCOMING FEATURE
-            </div>
-            <p className="text-xl text-gray-300 mb-10 leading-relaxed">
-              We're building a state-of-the-art AI Business Strategist for entrepreneurs in West Africa.
-              Soon, you'll be able to validate ideas, automate operations, and scale your venture with the power of Thnkforge AI.
-            </p>
-            <div className="flex flex-col gap-4 max-w-sm mx-auto">
-              <button
-                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 group"
-                onClick={() => window.location.href = 'mailto:support@thnkforge.com?subject=BusinessMate Early Access'}
-              >
-                Join the Waitlist
-                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-semibold transition-all border border-white/10"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className={`dashboard-container ${!isDarkMode ? 'light-theme' : ''}`}>
@@ -591,18 +549,7 @@ export default function DashboardPage() {
           toggleTheme={toggleTheme}
         />
 
-        {profile && (
-          <WelcomeModal
-            isOpen={isWelcomeOpen}
-            onClose={() => setIsWelcomeOpen(false)}
-            userName={profile.full_name?.split(' ')[0] || 'Explorer'}
-            goal={profile.career_goal}
-            country={profile.country}
-            skills={profile.skills}
-            aiInsight={aiGreetingInsight}
-            isDarkMode={isDarkMode}
-          />
-        )}
+
 
         {/* Center Panel: Chat */}
         <div className="glass-panel chat-panel relative overflow-hidden">
@@ -614,9 +561,13 @@ export default function DashboardPage() {
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
                   <Sparkles size={18} fill="white" />
                 </div>
-                <h1 className="chat-title" style={{ fontSize: '1.5rem', marginBottom: 0 }}>AI CareerMate</h1>
+                <h1 className="chat-title" style={{ fontSize: '1.5rem', marginBottom: 0 }}>
+                  {profile?.mode === 'BUSINESS' ? 'AI BusinessGuide' : 'AI CareerMate'}
+                </h1>
               </div>
-              <p className="chat-subtitle" style={{ marginLeft: '2.75rem' }}>AI Career Guide</p>
+              <p className="chat-subtitle" style={{ marginLeft: '2.75rem' }}>
+                {profile?.mode === 'BUSINESS' ? 'Venture Intelligence' : 'AI Career Guide'}
+              </p>
             </div>
 
             <div className="bottom-header-actions">
@@ -773,7 +724,7 @@ export default function DashboardPage() {
                 <input
                   type="text"
                   className="chat-input"
-                  placeholder={transcription ? "Edit transcription..." : "Ask CareerMate..."}
+                  placeholder={transcription ? "Edit transcription..." : (profile?.mode === 'BUSINESS' ? "Ask BusinessGuide..." : "Ask CareerMate...")}
                   value={inputValue || transcription}
                   onChange={(e) => {
                     if (transcription) setTranscription(e.target.value);
@@ -803,8 +754,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Panel: Widgets */}
-        <WidgetsPanel profile={profile} />
+        {/* Right Panel: Intelligence Snapshot */}
+        <IntelligenceSnapshot metrics={dashboardMetrics} />
 
       </div>
     </div>
